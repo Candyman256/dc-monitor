@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>DC Monitor | BOU IT</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+:root{
+  --bg:#0F1117;--surface:#181C26;--surface2:#1E2330;--surface3:#252A38;
+  --border:#2E3347;--border2:#3A4060;--faint:#252A38;
+  --text:#E8EAF0;--muted:#7A8099;
+  --blue:#4A8CF7;--blue-bg:rgba(74,140,247,0.14);
+  --green:#3DD68C;--green-bg:rgba(61,214,140,0.12);
+  --red:#F7594A;--red-bg:rgba(247,89,74,0.12);
+  --amber:#F5A623;--amber-bg:rgba(245,166,35,0.12);
+  --gray:#6B7280;--gray-bg:rgba(107,114,128,0.12);
+  --radius:14px;--radius-sm:8px;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+html{height:100%;}
+body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100%;font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;}
+
+/* ── TOP BAR ── */
+.topbar{
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+  padding:12px 16px;
+  padding-top:calc(12px + env(safe-area-inset-top, 0px));
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:200;
+}
+.topbar-brand{display:flex;align-items:center;gap:10px;}
+.bou-mark{width:32px;height:32px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:white;letter-spacing:0.5px;flex-shrink:0;}
+.topbar-name{font-size:14px;font-weight:600;}
+.topbar-sub{font-size:11px;color:var(--muted);}
+.step-pills{display:flex;gap:4px;}
+.step-pill{width:24px;height:6px;border-radius:3px;background:var(--faint);transition:all 0.3s;}
+.step-pill.active{background:var(--blue);width:32px;}
+.step-pill.done{background:var(--green);}
+
+/* ── PAGES ── */
+.page{display:none;padding:16px 16px calc(24px + var(--safe-bottom));min-height:calc(100vh - 60px);}
+.page.active{display:block;}
+
+/* ── PAGE HEADER ── */
+.page-hdr{margin-bottom:20px;}
+.page-num{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--blue);font-weight:500;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px;}
+.page-title{font-size:22px;font-weight:600;margin-bottom:3px;}
+.page-desc{font-size:13px;color:var(--muted);line-height:1.5;}
+
+/* ── CARDS ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px;}
+.card-label{font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;}
+
+/* ── SITE UPLOAD ZONES ── */
+.site-upload{border-radius:var(--radius);overflow:hidden;margin-bottom:12px;border:1px solid var(--border);}
+.site-upload-header{padding:14px 16px 12px;display:flex;align-items:center;justify-content:space-between;}
+.site-badge{font-size:11px;font-weight:700;letter-spacing:0.06em;padding:3px 9px;border-radius:20px;}
+.badge-hq{background:rgba(24,95,165,0.18);color:#4A8CF7;}
+.badge-brs{background:rgba(83,74,183,0.18);color:#9B93FF;}
+.site-label{font-size:15px;font-weight:600;}
+.site-sublabel{font-size:12px;color:var(--muted);margin-top:2px;}
+
+/* Camera button — big, finger-friendly */
+.cam-btn{
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  background:var(--surface2);border:1.5px dashed var(--border2);
+  border-radius:var(--radius-sm);
+  padding:18px 16px;margin:0 16px 12px;
+  cursor:pointer;position:relative;
+  transition:all 0.2s;
+  -webkit-appearance:none;
+  width:calc(100% - 32px);
+}
+.cam-btn:active{background:var(--blue-bg);border-color:var(--blue);}
+.cam-btn input[type=file]{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;}
+.cam-icon{font-size:24px;flex-shrink:0;}
+.cam-btn-text{text-align:left;}
+.cam-btn-title{font-size:14px;font-weight:500;color:var(--text);}
+.cam-btn-sub{font-size:11px;color:var(--muted);margin-top:1px;}
+
+/* Photo thumbnails */
+.thumbs{display:flex;gap:8px;overflow-x:auto;padding:0 16px 12px;-webkit-overflow-scrolling:touch;}
+.thumbs::-webkit-scrollbar{display:none;}
+.thumb{flex-shrink:0;width:72px;height:72px;border-radius:8px;object-fit:cover;border:2px solid var(--border);position:relative;}
+.thumb-wrap{position:relative;flex-shrink:0;}
+.thumb-rm{position:absolute;top:-5px;right:-5px;width:18px;height:18px;border-radius:50%;background:var(--red);color:white;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;border:2px solid var(--bg);}
+
+/* AI status bar */
+.ai-bar{margin:0 16px 14px;padding:10px 12px;border-radius:var(--radius-sm);font-size:12px;font-weight:500;display:flex;align-items:center;gap:8px;}
+.ai-bar.idle{background:var(--surface3);color:var(--muted);}
+.ai-bar.loading{background:var(--blue-bg);color:var(--blue);}
+.ai-bar.done{background:var(--green-bg);color:var(--green);}
+.ai-bar.error{background:var(--red-bg);color:var(--red);}
+.spinner{width:13px;height:13px;border:2px solid transparent;border-top-color:currentColor;border-radius:50%;animation:spin 0.7s linear infinite;flex-shrink:0;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ── FORM FIELDS ── */
+.form-group{margin-bottom:14px;}
+.form-label{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:5px;display:block;}
+.form-input{
+  width:100%;background:var(--surface2);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:12px 14px;
+  color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:15px;
+  outline:none;-webkit-appearance:none;appearance:none;
+  transition:border-color 0.2s;
+}
+.form-input:focus{border-color:var(--blue);}
+.form-input::placeholder{color:var(--faint);}
+
+/* ── PHASE GRID (3-col voltage table) ── */
+.phase-section-title{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:0.04em;text-transform:uppercase;margin:14px 0 8px;}
+.phase-grid{display:grid;grid-template-columns:auto 1fr 1fr 1fr;gap:1px;background:var(--border);border-radius:var(--radius-sm);overflow:hidden;font-size:13px;}
+.pg-head{background:var(--surface2);padding:7px 6px;font-size:10px;font-weight:600;color:var(--muted);text-align:center;letter-spacing:0.06em;text-transform:uppercase;}
+.pg-head:first-child{text-align:left;padding-left:10px;}
+.pg-row-label{background:var(--surface2);padding:8px 10px;font-size:12px;color:var(--muted);display:flex;align-items:center;}
+.pg-cell{background:var(--surface);padding:4px 5px;display:flex;align-items:center;}
+.pg-cell input{width:100%;background:transparent;border:none;outline:none;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:13px;text-align:center;padding:4px 2px;-webkit-appearance:none;}
+.pg-cell input:focus{background:var(--blue-bg);border-radius:4px;}
+
+/* Battery row */
+.bat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;}
+.bat-field{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;}
+.bat-field-label{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;}
+.bat-field input{width:100%;background:transparent;border:none;outline:none;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:15px;-webkit-appearance:none;}
+
+/* ── STATUS TOGGLES ── */
+.ahu-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--faint);}
+.ahu-row:last-child{border-bottom:none;}
+.ahu-name{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--muted);width:50px;flex-shrink:0;}
+.ahu-input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 10px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:15px;outline:none;-webkit-appearance:none;min-width:0;}
+.ahu-input:focus{border-color:var(--blue);}
+.status-seg{display:flex;border-radius:var(--radius-sm);overflow:hidden;flex-shrink:0;}
+.status-seg button{padding:8px 10px;font-size:11px;font-weight:700;border:none;cursor:pointer;background:var(--surface3);color:var(--muted);transition:all 0.15s;-webkit-appearance:none;font-family:'IBM Plex Sans',sans-serif;}
+.status-seg button.sel-ok{background:var(--green-bg);color:var(--green);}
+.status-seg button.sel-alert{background:var(--red-bg);color:var(--red);}
+.status-seg button.sel-warn{background:var(--amber-bg);color:var(--amber);}
+.status-seg button.sel-off{background:var(--gray-bg);color:var(--gray);}
+
+/* Check rows */
+.check-row{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:1px solid var(--faint);}
+.check-row:last-child{border-bottom:none;}
+.check-name{font-size:14px;}
+.check-seg{display:flex;gap:5px;}
+.check-seg button{padding:7px 12px;font-size:12px;font-weight:600;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:'IBM Plex Sans',sans-serif;-webkit-appearance:none;transition:all 0.15s;}
+.check-seg button.sel-ok{background:var(--green-bg);color:var(--green);border-color:transparent;}
+.check-seg button.sel-alert{background:var(--red-bg);color:var(--red);border-color:transparent;}
+.check-seg button.sel-warn{background:var(--amber-bg);color:var(--amber);border-color:transparent;}
+
+/* ── BOTTOM ACTION BAR ── */
+.action-bar{
+  position:fixed;bottom:0;left:0;right:0;
+  background:var(--surface);border-top:1px solid var(--border);
+  padding:12px 16px;padding-bottom:calc(12px + var(--safe-bottom));
+  display:flex;gap:10px;z-index:200;
+}
+.btn{
+  flex:1;padding:15px 10px;border-radius:var(--radius-sm);
+  font-size:15px;font-weight:600;border:none;cursor:pointer;
+  font-family:'IBM Plex Sans',sans-serif;-webkit-appearance:none;
+  transition:all 0.15s;display:flex;align-items:center;justify-content:center;gap:6px;
+}
+.btn:active{transform:scale(0.97);}
+.btn-back{background:var(--surface2);color:var(--muted);border:1px solid var(--border);flex:0 0 56px;}
+.btn-next{background:var(--blue);color:white;}
+.btn-success{background:var(--green);color:#0a1a0f;}
+.btn-outline{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
+
+/* ── SECTION DIVIDER ── */
+.sec-div{font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--blue);margin:18px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+
+/* ── ALERT FIELDS ── */
+.alert-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;color:var(--text);font-family:'IBM Plex Sans',sans-serif;font-size:15px;outline:none;-webkit-appearance:none;resize:vertical;min-height:80px;}
+.alert-input:focus{border-color:var(--red);}
+.alert-input::placeholder{color:var(--faint);}
+
+/* ── PREVIEW CARD ── */
+.preview-wrap{background:#F4F3EF;border-radius:var(--radius);overflow:hidden;margin-bottom:12px;}
+.preview-wrap iframe{width:100%;height:500px;border:none;display:block;}
+
+/* ── OUTPUT BUTTONS ── */
+.output-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:10px;}
+.output-card-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px;}
+.output-card-desc{font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.5;}
+.output-btn{width:100%;padding:14px;border-radius:var(--radius-sm);font-size:15px;font-weight:600;border:none;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;-webkit-appearance:none;transition:all 0.15s;display:block;text-align:center;}
+.output-btn:active{transform:scale(0.98);}
+.output-btn-blue{background:var(--blue);color:white;}
+.output-btn-green{background:var(--green);color:#0a1a0f;margin-top:8px;}
+.output-btn-outline{background:var(--surface2);color:var(--text);border:1px solid var(--border);margin-top:8px;}
+
+/* ── TOAST ── */
+.toast{position:fixed;top:calc(70px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%) translateY(-10px);background:var(--surface);border:1px solid var(--border);border-radius:30px;padding:10px 20px;font-size:13px;font-weight:500;color:var(--text);z-index:999;opacity:0;transition:all 0.3s;white-space:nowrap;pointer-events:none;box-shadow:0 4px 20px rgba(0,0,0,0.5);}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.green{border-color:var(--green);color:var(--green);}
+.toast.red{border-color:var(--red);color:var(--red);}
+
+/* ── SETTINGS INPUT ── */
+.setting-row{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:1px solid var(--faint);}
+.setting-row:last-child{border-bottom:none;}
+.setting-label{font-size:14px;}
+.setting-sub{font-size:12px;color:var(--muted);margin-top:1px;}
+.setting-input{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;color:var(--text);font-family:'IBM Plex Sans',sans-serif;font-size:13px;outline:none;-webkit-appearance:none;width:160px;text-align:right;}
+
+/* spacer for fixed action bar */
+.action-spacer{height:calc(80px + var(--safe-bottom));}
+
+/* UPS section header with toggle */
+.ups-section{margin-bottom:12px;}
+.ups-section-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 0;cursor:pointer;}
+.ups-section-title{font-size:15px;font-weight:600;}
+.ups-section-toggle{font-size:20px;color:var(--muted);transition:transform 0.2s;}
+.ups-section-toggle.open{transform:rotate(180deg);}
+.ups-section-body{display:none;}
+.ups-section-body.open{display:block;}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-brand">
+    <div class="bou-mark">BOU</div>
+    <div>
+      <div class="topbar-name">DC Monitor</div>
+      <div class="topbar-sub">Technology Infrastructure & Operations Department</div>
+    </div>
+  </div>
+  <div class="step-pills">
+    <div class="step-pill active" id="sp1"></div>
+    <div class="step-pill" id="sp2"></div>
+    <div class="step-pill" id="sp3"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     PAGE 1 — PHOTOS + BASIC INFO
+══════════════════════════════════════ -->
+<div class="page active" id="page1">
+  <div class="page-hdr">
+    <div class="page-num">Step 1 of 3</div>
+    <div class="page-title">Take Photos</div>
+    <div class="page-desc">Open this page on your iPhone in the data center. Take all HQ photos then all BRS photos. AI will read every panel automatically.</div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Report Info</div>
+    <div class="form-group">
+      <label class="form-label">Date</label>
+      <input type="date" class="form-input" id="reportDate">
+    </div>
+    <div class="form-group" style="margin-bottom:0;">
+      <label class="form-label">Prepared by</label>
+      <input type="text" class="form-input" id="preparedBy" placeholder="Your name">
+    </div>
+  </div>
+
+  <!-- HQ SITE -->
+  <div class="site-upload">
+    <div class="site-upload-header">
+      <div>
+        <div class="site-label">HQ Data Center</div>
+        <div class="site-sublabel">All HVAC + UPS panels</div>
+      </div>
+      <span class="site-badge badge-hq">HQ</span>
+    </div>
+    <button class="cam-btn" id="hq-cam-btn">
+      <input type="file" accept="image/*" multiple capture="environment" onchange="handlePhotos(this,'hq')" id="hq-input">
+      <span class="cam-icon">📷</span>
+      <div class="cam-btn-text">
+        <div class="cam-btn-title">Take or choose photos</div>
+        <div class="cam-btn-sub">Tap to open camera — select all HQ panels</div>
+      </div>
+    </button>
+    <div class="thumbs" id="hq-thumbs"></div>
+    <div class="ai-bar idle" id="hq-ai-bar">No photos yet</div>
+  </div>
+
+  <!-- BRS SITE -->
+  <div class="site-upload">
+    <div class="site-upload-header">
+      <div>
+        <div class="site-label">BRS Data Center</div>
+        <div class="site-sublabel">All HVAC + UPS panels</div>
+      </div>
+      <span class="site-badge badge-brs">BRS</span>
+    </div>
+    <button class="cam-btn" id="brs-cam-btn">
+      <input type="file" accept="image/*" multiple capture="environment" onchange="handlePhotos(this,'brs')" id="brs-input">
+      <span class="cam-icon">📷</span>
+      <div class="cam-btn-text">
+        <div class="cam-btn-title">Take or choose photos</div>
+        <div class="cam-btn-sub">Tap to open camera — select all BRS panels</div>
+      </div>
+    </button>
+    <div class="thumbs" id="brs-thumbs"></div>
+    <div class="ai-bar idle" id="brs-ai-bar">No photos yet</div>
+  </div>
+
+  <p style="font-size:12px;color:var(--muted);text-align:center;padding:4px 0 8px;">Photos optional — you can fill all values manually in step 2</p>
+  <div class="action-spacer"></div>
+</div>
+
+<!-- ══════════════════════════════════════
+     PAGE 2 — REVIEW & EDIT
+══════════════════════════════════════ -->
+<div class="page" id="page2">
+  <div class="page-hdr">
+    <div class="page-num">Step 2 of 3</div>
+    <div class="page-title">Review Readings</div>
+    <div class="page-desc">Check AI-extracted values. Blue fields were filled from photos. Edit anything that looks wrong.</div>
+  </div>
+
+  <!-- HQ SECTION -->
+  <div class="sec-div">HQ Data Center</div>
+
+  <div class="card">
+    <div class="card-label">Server Room — AHU Temperatures</div>
+    <div id="hq-ahu-rows">
+      <div class="ahu-row">
+        <span class="ahu-name">AHU 1</span>
+        <input class="ahu-input" id="hq-ahu1" placeholder="°C" inputmode="decimal">
+        <div class="status-seg">
+          <button onclick="setStatus('hq-ahu1-s',this,'ok')" class="sel-ok">OK</button>
+          <button onclick="setStatus('hq-ahu1-s',this,'alert')">!</button>
+          <button onclick="setStatus('hq-ahu1-s',this,'off')">OFF</button>
+        </div>
+        <input type="hidden" id="hq-ahu1-s" value="ok">
+      </div>
+      <div class="ahu-row">
+        <span class="ahu-name">AHU 2</span>
+        <input class="ahu-input" id="hq-ahu2" placeholder="°C" inputmode="decimal">
+        <div class="status-seg">
+          <button onclick="setStatus('hq-ahu2-s',this,'ok')" class="sel-ok">OK</button>
+          <button onclick="setStatus('hq-ahu2-s',this,'alert')">!</button>
+          <button onclick="setStatus('hq-ahu2-s',this,'off')">OFF</button>
+        </div>
+        <input type="hidden" id="hq-ahu2-s" value="ok">
+      </div>
+      <div class="ahu-row">
+        <span class="ahu-name">AHU 3</span>
+        <input class="ahu-input" id="hq-ahu3" placeholder="°C" inputmode="decimal">
+        <div class="status-seg">
+          <button onclick="setStatus('hq-ahu3-s',this,'ok')" class="sel-ok">OK</button>
+          <button onclick="setStatus('hq-ahu3-s',this,'alert')">!</button>
+          <button onclick="setStatus('hq-ahu3-s',this,'off')">OFF</button>
+        </div>
+        <input type="hidden" id="hq-ahu3-s" value="ok">
+      </div>
+    </div>
+  </div>
+
+  <!-- HQ UPS collapsible -->
+  <div class="card">
+    <div class="card-label">UPS Readings</div>
+    <div class="ups-section">
+      <div class="ups-section-hdr" onclick="toggleUps('hq-upsa')">
+        <span class="ups-section-title">UPS A</span>
+        <span class="ups-section-toggle" id="hq-upsa-tog">▼</span>
+      </div>
+      <div class="ups-section-body" id="hq-upsa-body">
+        <div class="phase-section-title">Voltage & Current</div>
+        <div class="phase-grid">
+          <div class="pg-head">Parameter</div><div class="pg-head">L1</div><div class="pg-head">L2</div><div class="pg-head">L3</div>
+          <div class="pg-row-label">Input (V)</div>
+          <div class="pg-cell"><input id="hqa-in-l1" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-cell"><input id="hqa-in-l2" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-cell"><input id="hqa-in-l3" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-row-label">Output (V)</div>
+          <div class="pg-cell"><input id="hqa-out-l1" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-cell"><input id="hqa-out-l2" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-cell"><input id="hqa-out-l3" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-row-label">Current (A)</div>
+          <div class="pg-cell"><input id="hqa-cur-l1" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-cell"><input id="hqa-cur-l2" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-cell"><input id="hqa-cur-l3" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-row-label">Load (%)</div>
+          <div class="pg-cell"><input id="hqa-load-l1" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-cell"><input id="hqa-load-l2" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-cell"><input id="hqa-load-l3" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-row-label">Power (kW)</div>
+          <div class="pg-cell"><input id="hqa-pw-l1" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-cell"><input id="hqa-pw-l2" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-cell"><input id="hqa-pw-l3" placeholder="—" inputmode="decimal"></div>
+        </div>
+        <div class="bat-grid">
+          <div class="bat-field"><div class="bat-field-label">Bat. Voltage (V)</div><input id="hqa-bat-v" placeholder="—" inputmode="decimal"></div>
+          <div class="bat-field"><div class="bat-field-label">Bat. Current (A)</div><input id="hqa-bat-a" placeholder="—" inputmode="decimal"></div>
+          <div class="bat-field"><div class="bat-field-label">Bat. Capacity (%)</div><input id="hqa-bat-pct" placeholder="—" inputmode="decimal"></div>
+          <div class="bat-field"><div class="bat-field-label">Runtime (min)</div><input id="hqa-runtime" placeholder="—" inputmode="decimal"></div>
+          <div class="bat-field"><div class="bat-field-label">Frequency (Hz)</div><input id="hqa-freq" placeholder="—" inputmode="decimal"></div>
+          <div class="bat-field"><div class="bat-field-label">UPS Temp (°C)</div><input id="hqa-temp" placeholder="N/A" inputmode="decimal"></div>
+        </div>
+      </div>
+    </div>
+    <div style="border-top:1px solid var(--border);margin-top:4px;padding-top:4px;">
+    <div class="ups-section">
+      <div class="ups-section-hdr" onclick="toggleUps('hq-upsb')">
+        <span class="ups-section-title">UPS B</span>
+        <span class="ups-section-toggle" id="hq-upsb-tog">▼</span>
+      </div>
+      <div class="ups-section-body" id="hq-upsb-body">
+        <div class="phase-grid">
+          <div class="pg-head">Parameter</div><div class="pg-head">L1</div><div class="pg-head">L2</div><div class="pg-head">L3</div>
+          <div class="pg-row-label">Input (V)</div>
+          <div class="pg-cell"><input id="hqb-in-l1" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-cell"><input id="hqb-in-l2" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-cell"><input id="hqb-in-l3" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-row-label">Output (V)</div>
+          <div class="pg-cell"><input id="hqb-out-l1" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-cell"><input id="hqb-out-l2" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-cell"><input id="hqb-out-l3" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-row-label">Current (A)</div>
+          <div class="pg-cell"><input id="hqb-cur-l1" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-cell"><input id="hqb-cur-l2" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-cell"><input id="hqb-cur-l3" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-row-label">Load (%)</div>
+          <div class="pg-cell"><input id="hqb-load-l1" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-cell"><input id="hqb-load-l2" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-cell"><input id="hqb-load-l3" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-row-label">Power (kW)</div>
+          <div class="pg-cell"><input id="hqb-pw-l1" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-cell"><input id="hqb-pw-l2" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-cell"><input id="hqb-pw-l3" placeholder="—" inputmode="decimal"></div>
+        </div>
+        <div class="bat-grid">
+          <div class="bat-field"><div class="bat-field-label">Bat. Voltage (V)</div><input id="hqb-bat-v" placeholder="—" inputmode="decimal"></div>
+          <div class="bat-field"><div class="bat-field-label">Bat. Current (A)</div><input id="hqb-bat-a" placeholder="—" inputmode="decimal"></div>
+          <div class="bat-field"><div class="bat-field-label">Bat. Capacity (%)</div><input id="hqb-bat-pct" placeholder="—" inputmode="decimal"></div>
+          <div class="bat-field"><div class="bat-field-label">Runtime (min)</div><input id="hqb-runtime" placeholder="—" inputmode="decimal"></div>
+          <div class="bat-field"><div class="bat-field-label">Frequency (Hz)</div><input id="hqb-freq" placeholder="—" inputmode="decimal"></div>
+          <div class="bat-field"><div class="bat-field-label">UPS Temp (°C)</div><input id="hqb-temp" placeholder="N/A" inputmode="decimal"></div>
+        </div>
+      </div>
+    </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">General Checks — HQ</div>
+    <div id="hq-checks">
+      <div class="check-row"><span class="check-name">Access Control</span><div class="check-seg"><button onclick="setCheck('hchk-access',this,'ok')" class="sel-ok">OK</button><button onclick="setCheck('hchk-access',this,'alert')">Alert</button></div><input type="hidden" id="hchk-access" value="ok"></div>
+      <div class="check-row"><span class="check-name">Lighting</span><div class="check-seg"><button onclick="setCheck('hchk-lighting',this,'ok')" class="sel-ok">OK</button><button onclick="setCheck('hchk-lighting',this,'alert')">Alert</button></div><input type="hidden" id="hchk-lighting" value="ok"></div>
+      <div class="check-row"><span class="check-name">Security Cameras</span><div class="check-seg"><button onclick="setCheck('hchk-cameras',this,'ok')" class="sel-ok">OK</button><button onclick="setCheck('hchk-cameras',this,'alert')">Alert</button></div><input type="hidden" id="hchk-cameras" value="ok"></div>
+      <div class="check-row"><span class="check-name">Fire Suppression</span><div class="check-seg"><button onclick="setCheck('hchk-fire',this,'ok')" class="sel-ok">OK</button><button onclick="setCheck('hchk-fire',this,'alert')">Alert</button></div><input type="hidden" id="hchk-fire" value="ok"></div>
+      <div class="check-row"><span class="check-name">Clutter &amp; Cleanliness</span><div class="check-seg"><button onclick="setCheck('hchk-clutter',this,'ok')" class="sel-ok">OK</button><button onclick="setCheck('hchk-clutter',this,'alert')">Alert</button></div><input type="hidden" id="hchk-clutter" value="ok"></div>
+    </div>
+  </div>
+
+  <!-- BRS SECTION -->
+  <div class="sec-div">BRS Data Center</div>
+
+  <div class="card">
+    <div class="card-label">Server Room — AHU Temperatures</div>
+    <div class="ahu-row">
+      <span class="ahu-name">AHU 1</span>
+      <input class="ahu-input" id="brs-ahu1" placeholder="°C" inputmode="decimal">
+      <div class="status-seg">
+        <button onclick="setStatus('brs-ahu1-s',this,'ok')" class="sel-ok">OK</button>
+        <button onclick="setStatus('brs-ahu1-s',this,'alert')">!</button>
+        <button onclick="setStatus('brs-ahu1-s',this,'off')">OFF</button>
+      </div>
+      <input type="hidden" id="brs-ahu1-s" value="ok">
+    </div>
+    <div class="ahu-row">
+      <span class="ahu-name">AHU 2</span>
+      <input class="ahu-input" id="brs-ahu2" placeholder="°C" inputmode="decimal">
+      <div class="status-seg">
+        <button onclick="setStatus('brs-ahu2-s',this,'ok')" class="sel-ok">OK</button>
+        <button onclick="setStatus('brs-ahu2-s',this,'alert')">!</button>
+        <button onclick="setStatus('brs-ahu2-s',this,'off')">OFF</button>
+      </div>
+      <input type="hidden" id="brs-ahu2-s" value="ok">
+    </div>
+    <div class="ahu-row">
+      <span class="ahu-name">AHU 3</span>
+      <input class="ahu-input" id="brs-ahu3" placeholder="°C" inputmode="decimal">
+      <div class="status-seg">
+        <button onclick="setStatus('brs-ahu3-s',this,'ok')" class="sel-ok">OK</button>
+        <button onclick="setStatus('brs-ahu3-s',this,'alert')">!</button>
+        <button onclick="setStatus('brs-ahu3-s',this,'off')">OFF</button>
+      </div>
+      <input type="hidden" id="brs-ahu3-s" value="ok">
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">UPS Readings</div>
+    <div class="ups-section">
+      <div class="ups-section-hdr" onclick="toggleUps('brs-ups1')">
+        <span class="ups-section-title">UPS 1</span>
+        <span class="ups-section-toggle" id="brs-ups1-tog">▼</span>
+      </div>
+      <div class="ups-section-body" id="brs-ups1-body">
+        <div class="phase-grid">
+          <div class="pg-head">Parameter</div><div class="pg-head">L1</div><div class="pg-head">L2</div><div class="pg-head">L3</div>
+          <div class="pg-row-label">Input (V)</div>
+          <div class="pg-cell"><input id="b1-in-l1" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-cell"><input id="b1-in-l2" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-cell"><input id="b1-in-l3" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-row-label">Output (V)</div>
+          <div class="pg-cell"><input id="b1-out-l1" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-cell"><input id="b1-out-l2" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-cell"><input id="b1-out-l3" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-row-label">Current (A)</div>
+          <div class="pg-cell"><input id="b1-cur-l1" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-cell"><input id="b1-cur-l2" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-cell"><input id="b1-cur-l3" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-row-label">Load (%)</div>
+          <div class="pg-cell"><input id="b1-load-l1" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-cell"><input id="b1-load-l2" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-cell"><input id="b1-load-l3" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-row-label">Power (kW)</div>
+          <div class="pg-cell"><input id="b1-pw-l1" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-cell"><input id="b1-pw-l2" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-cell"><input id="b1-pw-l3" placeholder="—" inputmode="decimal"></div>
+        </div>
+        <div class="bat-grid">
+          <div class="bat-field"><div class="bat-field-label">Bat. Voltage (V)</div><input id="b1-bat-v" placeholder="—" inputmode="decimal"></div>
+          <div class="bat-field"><div class="bat-field-label">Bat. Current (A)</div><input id="b1-bat-a" placeholder="—" inputmode="decimal"></div>
+          <div class="bat-field"><div class="bat-field-label">Bat. Capacity (%)</div><input id="b1-bat-pct" placeholder="—" inputmode="decimal"></div>
+          <div class="bat-field"><div class="bat-field-label">Runtime (min)</div><input id="b1-runtime" placeholder="—" inputmode="decimal"></div>
+          <div class="bat-field"><div class="bat-field-label">Frequency (Hz)</div><input id="b1-freq" placeholder="—" inputmode="decimal"></div>
+          <div class="bat-field"><div class="bat-field-label">UPS Temp (°C)</div><input id="b1-temp" placeholder="N/A" inputmode="decimal"></div>
+        </div>
+      </div>
+    </div>
+    <div style="border-top:1px solid var(--border);margin-top:4px;padding-top:4px;">
+    <div class="ups-section">
+      <div class="ups-section-hdr" onclick="toggleUps('brs-ups2')">
+        <span class="ups-section-title">UPS 2</span>
+        <span class="ups-section-toggle" id="brs-ups2-tog">▼</span>
+      </div>
+      <div class="ups-section-body" id="brs-ups2-body">
+        <div class="phase-grid">
+          <div class="pg-head">Parameter</div><div class="pg-head">L1</div><div class="pg-head">L2</div><div class="pg-head">L3</div>
+          <div class="pg-row-label">Input (V)</div>
+          <div class="pg-cell"><input id="b2-in-l1" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-cell"><input id="b2-in-l2" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-cell"><input id="b2-in-l3" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-row-label">Output (V)</div>
+          <div class="pg-cell"><input id="b2-out-l1" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-cell"><input id="b2-out-l2" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-cell"><input id="b2-out-l3" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-row-label">Current (A)</div>
+          <div class="pg-cell"><input id="b2-cur-l1" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-cell"><input id="b2-cur-l2" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-cell"><input id="b2-cur-l3" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-row-label">Load (%)</div>
+          <div class="pg-cell"><input id="b2-load-l1" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-cell"><input id="b2-load-l2" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-cell"><input id="b2-load-l3" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-row-label">Power (kW)</div>
+          <div class="pg-cell"><input id="b2-pw-l1" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-cell"><input id="b2-pw-l2" placeholder="—" inputmode="decimal"></div>
+          <div class="pg-cell"><input id="b2-pw-l3" placeholder="—" inputmode="decimal"></div>
+        </div>
+        <div class="bat-grid">
+          <div class="bat-field"><div class="bat-field-label">Bat. Voltage (V)</div><input id="b2-bat-v" placeholder="—" inputmode="decimal"></div>
+          <div class="bat-field"><div class="bat-field-label">Bat. Current (A)</div><input id="b2-bat-a" placeholder="—" inputmode="decimal"></div>
+          <div class="bat-field"><div class="bat-field-label">Bat. Capacity (%)</div><input id="b2-bat-pct" placeholder="—" inputmode="decimal"></div>
+          <div class="bat-field"><div class="bat-field-label">Runtime (min)</div><input id="b2-runtime" placeholder="—" inputmode="decimal"></div>
+          <div class="bat-field"><div class="bat-field-label">Frequency (Hz)</div><input id="b2-freq" placeholder="—" inputmode="decimal"></div>
+          <div class="bat-field"><div class="bat-field-label">UPS Temp (°C)</div><input id="b2-temp" placeholder="N/A" inputmode="decimal"></div>
+        </div>
+      </div>
+    </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">General Checks — BRS</div>
+    <div class="check-row"><span class="check-name">Access Control</span><div class="check-seg"><button onclick="setCheck('chk-access',this,'ok')" class="sel-ok">OK</button><button onclick="setCheck('chk-access',this,'alert')">Alert</button></div><input type="hidden" id="chk-access" value="ok"></div>
+    <div class="check-row"><span class="check-name">Lighting</span><div class="check-seg"><button onclick="setCheck('chk-lighting',this,'ok')" class="sel-ok">OK</button><button onclick="setCheck('chk-lighting',this,'alert')">Alert</button></div><input type="hidden" id="chk-lighting" value="ok"></div>
+    <div class="check-row"><span class="check-name">Security Cameras</span><div class="check-seg"><button onclick="setCheck('chk-cameras',this,'ok')" class="sel-ok">OK</button><button onclick="setCheck('chk-cameras',this,'alert')">Alert</button></div><input type="hidden" id="chk-cameras" value="ok"></div>
+    <div class="check-row"><span class="check-name">Fire Suppression</span><div class="check-seg"><button onclick="setCheck('chk-fire',this,'ok')" class="sel-ok">OK</button><button onclick="setCheck('chk-fire',this,'alert')">Alert</button></div><input type="hidden" id="chk-fire" value="ok"></div>
+    <div class="check-row"><span class="check-name">UPS Room Temp</span><div class="check-seg"><button onclick="setCheck('chk-upsroom',this,'ok')" class="sel-ok">OK</button><button onclick="setCheck('chk-upsroom',this,'alert')">Alert</button></div><input type="hidden" id="chk-upsroom" value="ok"></div>
+    <div class="check-row"><span class="check-name">Clutter &amp; Cleanliness</span><div class="check-seg"><button onclick="setCheck('chk-clutter',this,'ok')" class="sel-ok">OK</button><button onclick="setCheck('chk-clutter',this,'alert')">Alert</button></div><input type="hidden" id="chk-clutter" value="ok"></div>
+  </div>
+
+  <!-- ACTIVE ALERT -->
+  <div class="sec-div">Active Alert (if any)</div>
+  <div class="card">
+    <div class="form-group">
+      <label class="form-label">Alert Title</label>
+      <input type="text" class="form-input" id="alert-title" placeholder="Leave blank if no active alerts">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Description & Action Taken</label>
+      <textarea class="alert-input" id="alert-desc" placeholder="What happened and what was done about it..."></textarea>
+    </div>
+    <div class="form-group" style="margin-bottom:0;">
+      <label class="form-label">Assigned Owner</label>
+      <input type="text" class="form-input" id="alert-owner" placeholder="Name of person investigating">
+    </div>
+  </div>
+
+  <div class="action-spacer"></div>
+</div>
+
+<!-- ══════════════════════════════════════
+     PAGE 3 — GENERATE & SEND
+══════════════════════════════════════ -->
+<div class="page" id="page3">
+  <div class="page-hdr">
+    <div class="page-num">Step 3 of 3</div>
+    <div class="page-title">Send Report</div>
+    <div class="page-desc">Preview the report then open it directly in Outlook or download the HTML file.</div>
+  </div>
+
+  <div class="preview-wrap">
+    <iframe id="previewIframe" scrolling="yes"></iframe>
+  </div>
+
+  <div class="output-card">
+    <div class="output-card-title">Open in Outlook</div>
+    <div class="output-card-desc">Taps directly into your Outlook app with the report ready in the email body. Enter the recipient addresses below, then tap Send via Outlook.</div>
+    <div class="form-group">
+      <label class="form-label">To (comma-separated)</label>
+      <input type="email" class="form-input" id="emailTo" placeholder="alfred@bou.or.ug, ..." multiple>
+    </div>
+    <div class="form-group" style="margin-bottom:0;">
+      <label class="form-label">Subject</label>
+      <input type="text" class="form-input" id="emailSubject">
+    </div>
+    <button class="output-btn output-btn-blue" style="margin-top:14px;" onclick="openInOutlook()">📧 Open in Outlook</button>
+    <button class="output-btn output-btn-outline" onclick="copyEmailHtml()">⎘ Copy Email HTML</button>
+    <button class="output-btn output-btn-outline" onclick="downloadBrowser()">⬇ Download HTML File</button>
+  </div>
+
+  <button class="output-btn output-btn-outline" style="margin:0 0 12px;" onclick="resetTool()">↺ Start New Report</button>
+  <div class="action-spacer"></div>
+</div>
+
+<!-- FIXED ACTION BAR -->
+<div class="action-bar" id="actionBar">
+  <button class="btn btn-back" id="btnBack" onclick="goBack()" style="display:none;">←</button>
+  <button class="btn btn-next" id="btnNext" onclick="goNext()">Continue →</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── STATE ─────────────────────────────────────────
+let currentPage = 1;
+const photoFiles = { hq: [], brs: [] };
+
+// ── PAGE NAV ──────────────────────────────────────
+function goNext() {
+  if(currentPage === 3) return;
+  if(currentPage === 2) { buildPreview(); }
+  setPage(currentPage + 1);
+}
+function goBack() {
+  if(currentPage === 1) return;
+  setPage(currentPage - 1);
+}
+function setPage(n) {
+  document.querySelectorAll('.page').forEach((p,i) => p.classList.toggle('active', i+1===n));
+  ['sp1','sp2','sp3'].forEach((id,i) => {
+    const el = document.getElementById(id);
+    el.classList.remove('active','done');
+    if(i+1 < n) el.classList.add('done');
+    else if(i+1 === n) el.classList.add('active');
+  });
+  document.getElementById('btnBack').style.display = n > 1 ? 'flex' : 'none';
+  document.getElementById('btnNext').textContent = n === 2 ? 'Generate Report →' : n === 3 ? '✓ Done' : 'Continue →';
+  document.getElementById('btnNext').className = n === 3 ? 'btn btn-outline' : 'btn btn-next';
+  currentPage = n;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ── UPS COLLAPSE ──────────────────────────────────
+function toggleUps(id) {
+  const body = document.getElementById(id+'-body');
+  const tog  = document.getElementById(id+'-tog');
+  const open = body.classList.toggle('open');
+  tog.classList.toggle('open', open);
+}
+
+// ── STATUS BUTTONS ────────────────────────────────
+function setStatus(hiddenId, btn, val) {
+  document.getElementById(hiddenId).value = val;
+  const seg = btn.closest('.status-seg');
+  seg.querySelectorAll('button').forEach(b => b.className = '');
+  btn.className = 'sel-' + val;
+  // auto-trigger smart status if temp field changes
+  autoStatus(hiddenId.replace('-s',''));
+}
+function setCheck(hiddenId, btn, val) {
+  document.getElementById(hiddenId).value = val;
+  const seg = btn.closest('.check-seg');
+  seg.querySelectorAll('button').forEach(b => b.className = '');
+  btn.className = 'sel-' + val;
+}
+
+// ── PHOTO HANDLING ────────────────────────────────
+function handlePhotos(input, site) {
+  const files = Array.from(input.files);
+  if(!files.length) return;
+  photoFiles[site] = [...photoFiles[site], ...files];
+  renderThumbs(site);
+  extractAll(site);
+}
+
+function renderThumbs(site) {
+  const container = document.getElementById(site+'-thumbs');
+  container.innerHTML = '';
+  photoFiles[site].forEach((f, i) => {
+    const url = URL.createObjectURL(f);
+    const wrap = document.createElement('div');
+    wrap.className = 'thumb-wrap';
+    wrap.innerHTML = `<img class="thumb" src="${url}"><div class="thumb-rm" onclick="removePhoto('${site}',${i})">×</div>`;
+    container.appendChild(wrap);
+  });
+}
+
+function removePhoto(site, idx) {
+  photoFiles[site].splice(idx, 1);
+  renderThumbs(site);
+  if(photoFiles[site].length === 0) {
+    const bar = document.getElementById(site+'-ai-bar');
+    bar.className='ai-bar idle'; bar.textContent='No photos yet';
+  }
+}
+
+// ── AI EXTRACTION ─────────────────────────────────
+async function extractAll(site) {
+  const files = photoFiles[site];
+  if(!files.length) return;
+  const bar = document.getElementById(site+'-ai-bar');
+  bar.className = 'ai-bar loading';
+  bar.innerHTML = '<div class="spinner"></div> Reading ' + files.length + ' photo' + (files.length>1?'s':'') + '...';
+
+  // Convert all files to base64
+  const images = await Promise.all(files.map(f => fileToBase64(f)));
+
+  const prompt = `You are reading data center panel photos. There may be multiple photos showing HVAC/AHU temperature displays and UPS power unit displays for the ${site.toUpperCase()} data center.
+
+Extract ALL values you can see across all images. Return ONLY a valid JSON object with these exact keys (use empty string "" for anything not visible):
+
+{
+  "ahu1": "", "ahu2": "", "ahu3": "",
+  "ups_a_in_l1":"","ups_a_in_l2":"","ups_a_in_l3":"",
+  "ups_a_out_l1":"","ups_a_out_l2":"","ups_a_out_l3":"",
+  "ups_a_cur_l1":"","ups_a_cur_l2":"","ups_a_cur_l3":"",
+  "ups_a_load_l1":"","ups_a_load_l2":"","ups_a_load_l3":"",
+  "ups_a_pw_l1":"","ups_a_pw_l2":"","ups_a_pw_l3":"",
+  "ups_a_bat_v":"","ups_a_bat_a":"","ups_a_bat_pct":"","ups_a_runtime":"","ups_a_freq":"","ups_a_temp":"",
+  "ups_b_in_l1":"","ups_b_in_l2":"","ups_b_in_l3":"",
+  "ups_b_out_l1":"","ups_b_out_l2":"","ups_b_out_l3":"",
+  "ups_b_cur_l1":"","ups_b_cur_l2":"","ups_b_cur_l3":"",
+  "ups_b_load_l1":"","ups_b_load_l2":"","ups_b_load_l3":"",
+  "ups_b_pw_l1":"","ups_b_pw_l2":"","ups_b_pw_l3":"",
+  "ups_b_bat_v":"","ups_b_bat_a":"","ups_b_bat_pct":"","ups_b_runtime":"","ups_b_freq":"","ups_b_temp":""
+}
+
+For AHU temperatures: just the number like "21.6". Use "OFF" if a unit is off.
+For UPS: if you only see one UPS in all photos, put all readings under ups_a_ and leave ups_b_ empty.
+For BRS site: ups_a_ = UPS 1, ups_b_ = UPS 2.
+Return ONLY the JSON object. No explanation, no markdown, no backticks.`;
+
+  const content = [
+    ...images.map(img => ({ type:'image', source:{ type:'base64', media_type:img.mime, data:img.b64 }})),
+    { type:'text', text: prompt }
+  ];
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:1500, messages:[{role:'user',content}] })
+    });
+    const data = await resp.json();
+    const text = (data.content?.find(c=>c.type==='text')?.text||'').replace(/```[a-z]*|```/g,'').trim();
+    const parsed = JSON.parse(text);
+    fillFromExtraction(site, parsed);
+    bar.className='ai-bar done';
+    bar.innerHTML='✓ Readings extracted from '+files.length+' photo'+(files.length>1?'s':'')+' — verify in fields below';
+  } catch(e) {
+    bar.className='ai-bar error';
+    bar.textContent='⚠ Could not read photos — enter values manually below';
+  }
+}
+
+function fileToBase64(file) {
+  return new Promise(res => {
+    const r = new FileReader();
+    r.onload = e => res({ b64: e.target.result.split(',')[1], mime: file.type });
+    r.readAsDataURL(file);
+  });
+}
+
+function fillFromExtraction(site, d) {
+  const pfx = site === 'hq' ? 'hq' : 'brs';
+  const uA   = site === 'hq' ? 'hqa' : 'b1';
+  const uB   = site === 'hq' ? 'hqb' : 'b2';
+
+  setFld(pfx+'-ahu1', d.ahu1); setFld(pfx+'-ahu2', d.ahu2); setFld(pfx+'-ahu3', d.ahu3);
+  autoStatusFromVal(pfx+'-ahu1'); autoStatusFromVal(pfx+'-ahu2'); autoStatusFromVal(pfx+'-ahu3');
+
+  const uAmap = [['in-l1','ups_a_in_l1'],['in-l2','ups_a_in_l2'],['in-l3','ups_a_in_l3'],
+    ['out-l1','ups_a_out_l1'],['out-l2','ups_a_out_l2'],['out-l3','ups_a_out_l3'],
+    ['cur-l1','ups_a_cur_l1'],['cur-l2','ups_a_cur_l2'],['cur-l3','ups_a_cur_l3'],
+    ['load-l1','ups_a_load_l1'],['load-l2','ups_a_load_l2'],['load-l3','ups_a_load_l3'],
+    ['pw-l1','ups_a_pw_l1'],['pw-l2','ups_a_pw_l2'],['pw-l3','ups_a_pw_l3'],
+    ['bat-v','ups_a_bat_v'],['bat-a','ups_a_bat_a'],['bat-pct','ups_a_bat_pct'],
+    ['runtime','ups_a_runtime'],['freq','ups_a_freq'],['temp','ups_a_temp']];
+  uAmap.forEach(([fld,key]) => setFld(uA+'-'+fld, d[key]));
+
+  const uBmap = [['in-l1','ups_b_in_l1'],['in-l2','ups_b_in_l2'],['in-l3','ups_b_in_l3'],
+    ['out-l1','ups_b_out_l1'],['out-l2','ups_b_out_l2'],['out-l3','ups_b_out_l3'],
+    ['cur-l1','ups_b_cur_l1'],['cur-l2','ups_b_cur_l2'],['cur-l3','ups_b_cur_l3'],
+    ['load-l1','ups_b_load_l1'],['load-l2','ups_b_load_l2'],['load-l3','ups_b_load_l3'],
+    ['pw-l1','ups_b_pw_l1'],['pw-l2','ups_b_pw_l2'],['pw-l3','ups_b_pw_l3'],
+    ['bat-v','ups_b_bat_v'],['bat-a','ups_b_bat_a'],['bat-pct','ups_b_bat_pct'],
+    ['runtime','ups_b_runtime'],['freq','ups_b_freq'],['temp','ups_b_temp']];
+  uBmap.forEach(([fld,key]) => setFld(uB+'-'+fld, d[key]));
+
+  // Auto-open UPS sections that got data
+  if(d.ups_a_bat_pct || d.ups_a_in_l1) {
+    const bodyId = site==='hq'?'hq-upsa':'brs-ups1';
+    const body = document.getElementById(bodyId+'-body');
+    const tog  = document.getElementById(bodyId+'-tog');
+    if(body && !body.classList.contains('open')){ body.classList.add('open'); if(tog) tog.classList.add('open'); }
+  }
+  if(d.ups_b_bat_pct || d.ups_b_in_l1) {
+    const bodyId = site==='hq'?'hq-upsb':'brs-ups2';
+    const body = document.getElementById(bodyId+'-body');
+    const tog  = document.getElementById(bodyId+'-tog');
+    if(body && !body.classList.contains('open')){ body.classList.add('open'); if(tog) tog.classList.add('open'); }
+  }
+}
+
+function setFld(id, val) {
+  const el = document.getElementById(id);
+  if(el && val !== undefined && val !== '') {
+    el.value = val;
+    el.style.borderColor = 'var(--blue)';
+    el.style.background  = 'var(--blue-bg)';
+    setTimeout(()=>{ if(el){el.style.borderColor='';el.style.background='';} }, 4000);
+  }
+}
+
+function autoStatusFromVal(fieldId) {
+  const el  = document.getElementById(fieldId);
+  const sid = document.getElementById(fieldId+'-s');
+  if(!el || !sid) return;
+  const v = el.value.trim().toUpperCase();
+  let newVal = 'ok';
+  if(v === 'OFF') newVal = 'off';
+  else { const n = parseFloat(v); if(!isNaN(n) && (n < 18 || n > 24)) newVal = 'alert'; }
+  sid.value = newVal;
+  // update button styles
+  const seg = sid.previousElementSibling;
+  if(seg) seg.querySelectorAll('button').forEach(b => {
+    b.className = b.textContent === (newVal==='ok'?'OK':newVal==='off'?'OFF':'!') ? 'sel-'+newVal : '';
+  });
+}
+function autoStatus(fieldId) { autoStatusFromVal(fieldId); }
+
+// ── HELPERS ───────────────────────────────────────
+const g = id => { const e=document.getElementById(id); return e?e.value.trim():''; };
+const gs = id => { const e=document.getElementById(id); return e?e.value:'ok'; };
+
+function formatDate(d) {
+  if(!d) return new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+  return new Date(d+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+}
+
+function statusColors(v) {
+  if(v==='alert') return {bg:'#FFE5E7',color:'#C1121F'};
+  if(v==='warn')  return {bg:'#FFF3CD',color:'#C77B00'};
+  if(v==='off')   return {bg:'#F3F4F6',color:'#6B7280'};
+  return {bg:'#D8F3DC',color:'#2D6A4F'};
+}
+function statusLabel(v){return{ok:'OK',alert:'ALERT',warn:'WARNING',off:'OFF'}[v]||'OK';}
+
+function siteStatus(site) {
+  const ids = [site+'-ahu1-s',site+'-ahu2-s',site+'-ahu3-s'];
+  if(ids.map(gs).some(s=>s==='alert')) return 'alert';
+  if(ids.map(gs).some(s=>['warn','off'].includes(s))) return 'warn';
+  return 'ok';
+}
+
+function ahuRowsHtml(site) {
+  return ['ahu1','ahu2','ahu3'].map(a => {
+    const val = g(site+'-'+a)||'—';
+    const s   = gs(site+'-'+a+'-s');
+    const c   = statusColors(s);
+    const n   = parseFloat(val);
+    const pct = s==='off'?0:(!isNaN(n)?Math.min(100,Math.max(0,((n-15)/15)*100)):50);
+    const barColor = s==='alert'?'#C1121F':s==='warn'?'#F5A623':'#378ADD';
+    const display  = val+(val!=='—'&&val.toUpperCase()!=='OFF'&&!val.includes('°')?'°C':'');
+    return `<div style="display:flex;align-items:center;gap:8px;margin:5px 0;">
+      <span style="font-size:11px;font-family:monospace;color:#7A7870;width:38px;flex-shrink:0;">AHU ${a.slice(-1)}</span>
+      <div style="flex:1;height:4px;background:#E2E0D8;border-radius:2px;overflow:hidden;"><div style="height:100%;width:${pct.toFixed(0)}%;background:${barColor};border-radius:2px;"></div></div>
+      <span style="font-size:11px;font-family:monospace;font-weight:600;color:${c.color};width:48px;text-align:right;flex-shrink:0;">${display}</span>
+      <span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;background:${c.bg};color:${c.color};flex-shrink:0;">${statusLabel(s)}</span>
+    </div>`;
+  }).join('');
+}
+
+function upsCardHtml(label, siteLabel, siteColor, batPctId, runtimeId, freqId, l1id, l2id, l3id) {
+  const batPct  = g(batPctId)||'—';
+  const runtime = g(runtimeId)||'—';
+  const freq    = g(freqId)||'—';
+  const loads   = [g(l1id),g(l2id),g(l3id)].map(parseFloat).filter(v=>!isNaN(v));
+  const avgLoad = loads.length ? (loads.reduce((a,b)=>a+b,0)/loads.length).toFixed(0)+'%' : '—';
+  const nb      = parseFloat(batPct);
+  const batClr  = !isNaN(nb)?(nb>=80?'#2D6A4F':nb>=50?'#C77B00':'#C1121F'):'#6B7280';
+  const hasData = g(batPctId) || g(l1id);
+  return `<div style="background:#F4F3EF;border:1px solid #E2E0D8;border-radius:8px;padding:12px;text-align:center;">
+    <p style="font-size:12px;font-weight:700;color:#1A1917;margin-bottom:2px;">${label}</p>
+    <p style="font-size:10px;color:${siteColor};margin-bottom:10px;">${siteLabel}</p>
+    <p style="font-size:${hasData?'20px':'16px'};font-weight:700;color:${hasData?batClr:'#2D6A4F'};margin-bottom:4px;">${hasData?batPct:'OK'}</p>
+    <p style="font-size:10px;color:#7A7870;margin-bottom:${hasData?'8px':'4px'};">${hasData?'Battery':'Status'}</p>
+    ${hasData?`<table style="width:100%;font-size:10px;color:#7A7870;border-collapse:collapse;">
+      <tr><td style="text-align:left;padding:2px 0;">Runtime</td><td style="text-align:right;font-weight:600;color:#1A1917;">${runtime} min</td></tr>
+      <tr><td style="text-align:left;padding:2px 0;">Load avg</td><td style="text-align:right;font-weight:600;color:#1A1917;">${avgLoad}</td></tr>
+      <tr><td style="text-align:left;padding:2px 0;">Freq</td><td style="text-align:right;font-weight:600;color:#1A1917;">${freq} Hz</td></tr>
+    </table>`:'<p style="font-size:10px;color:#7A7870;font-style:italic;">No readings entered</p>'}
+  </div>`;
+}
+
+function checkBadge(v){const c=statusColors(v);return `<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:3px;background:${c.bg};color:${c.color};">${statusLabel(v)}</span>`;}
+
+function alertSection() {
+  const title = g('alert-title'); const desc = g('alert-desc'); const owner = g('alert-owner');
+  const hasAutoAlert = ['hq-ahu1-s','hq-ahu2-s','hq-ahu3-s','brs-ahu1-s','brs-ahu2-s','brs-ahu3-s'].map(gs).some(s=>s==='alert');
+  if(!title && !hasAutoAlert) return '';
+  return `<p style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#7A7870;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #E2E0D8;">Active Alerts</p>
+  <div style="border:1px solid #FBBBC0;border-radius:8px;overflow:hidden;margin-bottom:18px;">
+    <div style="background:#C1121F;padding:8px 12px;color:white;font-size:11px;font-weight:700;text-transform:uppercase;">&#9679; Active Alert</div>
+    <div style="background:#FFF8F8;padding:14px;">
+      <p style="font-size:13px;font-weight:700;color:#C1121F;margin-bottom:6px;">${title||'Alert Condition Detected'}</p>
+      <p style="font-size:12px;color:#5a0008;line-height:1.6;margin-bottom:${owner?'8px':'0'};">${desc||'An alert condition has been detected. Please investigate.'}</p>
+      ${owner?`<span style="font-size:11px;font-weight:600;color:#C1121F;background:rgba(193,18,31,0.08);display:inline-block;padding:3px 10px;border-radius:4px;">Owner: ${owner}</span>`:''}
+    </div>
+  </div>`;
+}
+
+// ── BUILD REPORT ──────────────────────────────────
+function buildReportHTML(forEmail=false) {
+  const date   = formatDate(g('reportDate'));
+  const prepBy = g('preparedBy')||'Technology Infrastructure & Operations Department';
+  const hqSt   = siteStatus('hq');
+  const brsSt  = siteStatus('brs');
+  const hqC    = statusColors(hqSt);
+  const brsC   = statusColors(brsSt);
+  const ff     = forEmail ? `-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif` : `'IBM Plex Sans',sans-serif`;
+  const brsChecks = [['Access Control','chk-access'],['Lighting','chk-lighting'],['Security Cameras','chk-cameras'],['Fire Suppression','chk-fire'],['UPS Room Temp','chk-upsroom'],['Clutter & Cleanliness','chk-clutter']];
+  const hqChecks  = [['Access Control','hchk-access'],['Lighting','hchk-lighting'],['Security Cameras','hchk-cameras'],['Fire Suppression','hchk-fire'],['Clutter & Cleanliness','hchk-clutter']];
+
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DC Monitor — ${date}</title>
+${forEmail?'':`<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">`}
+<style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:${ff};background:#F4F3EF;color:#1A1917;}
+@media(max-width:580px){.two-col,.four-col{display:block!important;}.two-col>*,.four-col>*{display:block!important;width:100%!important;padding:0 0 10px!important;}}</style></head>
+<body style="background:#F4F3EF;margin:0;padding:${forEmail?'20px 0':'0'};">
+<table ${forEmail?'width="620" align="center" style="max-width:620px;width:100%;margin:0 auto;"':'style="max-width:900px;margin:0 auto;"'} cellpadding="0" cellspacing="0" border="0">
+<tr><td style="background:#1F3864;padding:13px 24px;${forEmail?'border-radius:10px 10px 0 0;':''}">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+    <td><p style="font-family:${ff};font-size:13px;font-weight:600;color:white;margin-bottom:1px;">Bank of Uganda</p><p style="font-family:${ff};font-size:11px;color:rgba(255,255,255,0.5);">Technology Infrastructure & Operations Department</p></td>
+    <td align="right" style="font-family:monospace;font-size:11px;color:rgba(255,255,255,0.5);">${date.toUpperCase()}</td>
+  </tr></table>
+</td></tr>
+<tr><td style="background:#1F3864;padding:24px 24px 30px;border-top:1px solid rgba(255,255,255,0.08);">
+  <p style="font-family:${ff};font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-bottom:8px;">IT Infrastructure — Routine Monitoring</p>
+  <p style="font-family:${ff};font-size:24px;color:white;font-weight:300;margin-bottom:6px;"><strong style="font-weight:700;">Data Center</strong> Status Report</p>
+  <p style="font-family:${ff};font-size:12px;color:rgba(255,255,255,0.5);">HQ &amp; BRS &nbsp;·&nbsp; ${prepBy}</p>
+</td></tr>
+<tr><td style="background:#ffffff;padding:22px;border:1px solid #E2E0D8;border-top:none;${forEmail?'':'border-bottom:none;'}">
+
+<p style="font-family:${ff};font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#7A7870;margin-bottom:10px;padding-bottom:7px;border-bottom:1px solid #E2E0D8;">Site Overview</p>
+<table class="two-col" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;"><tr>
+  <td width="48%" valign="top" style="padding-right:8px;"><table width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #E2E0D8;border-radius:8px;overflow:hidden;"><tr><td style="background:#185FA5;height:3px;"></td></tr><tr><td style="padding:14px;">
+    <p style="font-family:${ff};font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#185FA5;background:#E6F1FB;display:inline-block;padding:2px 7px;border-radius:3px;margin-bottom:8px;">HQ</p>
+    <p style="font-family:${ff};font-size:14px;font-weight:600;color:#1A1917;margin-bottom:2px;">HQ Data Center</p>
+    <p style="font-family:${ff};font-size:11px;color:#7A7870;margin-bottom:10px;">Headquarters</p>
+    <p style="font-family:${ff};font-size:12px;font-weight:700;color:${hqC.color};background:${hqC.bg};display:inline-block;padding:4px 10px;border-radius:12px;">&#9679; ${hqSt==='ok'?'All Systems Normal':hqSt==='alert'?'Alert Detected':'Warning'}</p>
+  </td></tr></table></td>
+  <td width="48%" valign="top" style="padding-left:8px;"><table width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid ${brsSt==='alert'?'#FBBBC0':'#E2E0D8'};border-radius:8px;overflow:hidden;${brsSt==='alert'?'background:#FFF8F8;':''}"><tr><td style="background:${brsSt==='alert'?'#C1121F':'#534AB7'};height:3px;"></td></tr><tr><td style="padding:14px;">
+    <p style="font-family:${ff};font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#534AB7;background:#EEEDFE;display:inline-block;padding:2px 7px;border-radius:3px;margin-bottom:8px;">BRS</p>
+    <p style="font-family:${ff};font-size:14px;font-weight:600;color:#1A1917;margin-bottom:2px;">BRS Data Center</p>
+    <p style="font-family:${ff};font-size:11px;color:#7A7870;margin-bottom:10px;">Backup &amp; Recovery Site</p>
+    <p style="font-family:${ff};font-size:12px;font-weight:700;color:${brsC.color};background:${brsC.bg};display:inline-block;padding:4px 10px;border-radius:12px;">&#9679; ${brsSt==='ok'?'All Systems Normal':brsSt==='alert'?'Alert Detected':'Warning'}</p>
+  </td></tr></table></td>
+</tr></table>
+
+<p style="font-family:${ff};font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#7A7870;margin-bottom:10px;padding-bottom:7px;border-bottom:1px solid #E2E0D8;">Temperature</p>
+<table class="two-col" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;"><tr>
+  <td width="48%" valign="top" style="padding-right:8px;"><div style="background:#F4F3EF;border:1px solid #E2E0D8;border-radius:8px;padding:14px;"><p style="font-family:${ff};font-size:12px;font-weight:600;color:#1A1917;margin-bottom:10px;">HQ — Server Room AHUs</p>${ahuRowsHtml('hq')}</div></td>
+  <td width="48%" valign="top" style="padding-left:8px;"><div style="background:${brsSt==='alert'?'#FFF8F8':'#F4F3EF'};border:1px solid ${brsSt==='alert'?'#FBBBC0':'#E2E0D8'};border-radius:8px;padding:14px;"><p style="font-family:${ff};font-size:12px;font-weight:600;color:#1A1917;margin-bottom:10px;">BRS — Server Room AHUs</p>${ahuRowsHtml('brs')}</div></td>
+</tr></table>
+
+<p style="font-family:${ff};font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#7A7870;margin-bottom:10px;padding-bottom:7px;border-bottom:1px solid #E2E0D8;">UPS Status</p>
+<table class="four-col" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;"><tr>
+  <td width="25%" valign="top" style="padding-right:5px;">${upsCardHtml('UPS A','HQ','#185FA5','hqa-bat-pct','hqa-runtime','hqa-freq','hqa-load-l1','hqa-load-l2','hqa-load-l3')}</td>
+  <td width="25%" valign="top" style="padding:0 5px;">${upsCardHtml('UPS B','HQ','#185FA5','hqb-bat-pct','hqb-runtime','hqb-freq','hqb-load-l1','hqb-load-l2','hqb-load-l3')}</td>
+  <td width="25%" valign="top" style="padding:0 5px;">${upsCardHtml('UPS 1','BRS','#534AB7','b1-bat-pct','b1-runtime','b1-freq','b1-load-l1','b1-load-l2','b1-load-l3')}</td>
+  <td width="25%" valign="top" style="padding-left:5px;">${upsCardHtml('UPS 2','BRS','#534AB7','b2-bat-pct','b2-runtime','b2-freq','b2-load-l1','b2-load-l2','b2-load-l3')}</td>
+</tr></table>
+
+<p style="font-family:${ff};font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#7A7870;margin-bottom:10px;padding-bottom:7px;border-bottom:1px solid #E2E0D8;">General Checks</p>
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:18px;background:white;border:1px solid #E2E0D8;border-radius:8px;overflow:hidden;">
+<tr>
+  <td width="50%" valign="top" style="border-right:1px solid #E2E0D8;">${brsChecks.slice(0,3).map(([l,id])=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid #E2E0D8;font-size:12px;font-family:${ff};"><span>BRS: ${l}</span>${checkBadge(gs(id))}</div>`).join('')}</td>
+  <td width="50%" valign="top">${[...brsChecks.slice(3),...hqChecks.slice(0,2)].map(([l,id])=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid #E2E0D8;font-size:12px;font-family:${ff};"><span>${id.startsWith('h')?'HQ':'BRS'}: ${l}</span>${checkBadge(gs(id))}</div>`).join('')}</td>
+</tr></table>
+
+${alertSection()}
+
+</td></tr>
+<tr><td style="background:#F4F3EF;border:1px solid #E2E0D8;border-top:none;${forEmail?'border-radius:0 0 10px 10px;':''}padding:13px 24px;">
+<table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+  <td style="font-family:${ff};font-size:11px;color:#7A7870;">Prepared by ${prepBy} &nbsp;·&nbsp; TI&O Department</td>
+  <td align="right" style="font-family:${ff};font-size:11px;color:#7A7870;">Bank of Uganda &nbsp;·&nbsp; Confidential</td>
+</tr></table>
+</td></tr></table></body></html>`;
+}
+
+// ── PREVIEW ────────────────────────────────────────
+function buildPreview() {
+  const iframe = document.getElementById('previewIframe');
+  iframe.srcdoc = buildReportHTML(false);
+  // Set subject default
+  const d = formatDate(g('reportDate'));
+  document.getElementById('emailSubject').value = `Data Center Monitoring Report — ${d}`;
+}
+
+// ── SEND VIA OUTLOOK ───────────────────────────────
+function openInOutlook() {
+  const to      = encodeURIComponent(g('emailTo'));
+  const subject = encodeURIComponent(g('emailSubject') || 'Data Center Monitoring Report');
+  const body    = encodeURIComponent(buildReportHTML(true));
+  // mailto: with HTML body — opens Outlook on iOS
+  const link = `mailto:${to}?subject=${subject}&body=${body}`;
+  // For modern Outlook app deep link
+  const outlookLink = `ms-outlook://compose?to=${to}&subject=${subject}&body=${body}`;
+  // Try Outlook deep link first, fall back to mailto
+  window.location.href = outlookLink;
+  setTimeout(()=>{ window.location.href = link; }, 300);
+  showToast('Opening Outlook…', 'green');
+}
+
+// ── COPY EMAIL ─────────────────────────────────────
+async function copyEmailHtml() {
+  const html = buildReportHTML(true);
+  try {
+    await navigator.clipboard.writeText(html);
+    showToast('Email HTML copied!', 'green');
+  } catch(e) {
+    const ta = document.createElement('textarea');
+    ta.value = html; ta.style.cssText='position:fixed;opacity:0;';
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('Email HTML copied!', 'green');
+  }
+}
+
+// ── DOWNLOAD ───────────────────────────────────────
+function downloadBrowser() {
+  const html = buildReportHTML(false);
+  const blob = new Blob([html],{type:'text/html'});
+  const a    = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `DC_Report_${g('reportDate')||new Date().toISOString().slice(0,10)}.html`;
+  a.click();
+  showToast('File downloaded', 'green');
+}
+
+// ── RESET ──────────────────────────────────────────
+function resetTool() {
+  if(!confirm('Clear all data and start a new report?')) return;
+  document.querySelectorAll('input:not([type=hidden]),textarea').forEach(el=>el.value='');
+  document.querySelectorAll('input[type=hidden]').forEach(el=>el.value='ok');
+  document.querySelectorAll('.check-seg button, .status-seg button').forEach(b=>b.className='');
+  document.querySelectorAll('.check-seg button:first-child').forEach(b=>b.className='sel-ok');
+  document.querySelectorAll('.status-seg button:first-child').forEach(b=>b.className='sel-ok');
+  document.querySelectorAll('.thumbs').forEach(t=>t.innerHTML='');
+  document.querySelectorAll('.ai-bar').forEach(b=>{b.className='ai-bar idle';b.textContent='No photos yet';});
+  photoFiles.hq=[]; photoFiles.brs=[];
+  document.getElementById('reportDate').value = new Date().toISOString().slice(0,10);
+  document.getElementById('preparedBy').value = 'Wycliff Omoding';
+  setPage(1);
+}
+
+// ── TOAST ──────────────────────────────────────────
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type?' '+type:'');
+  setTimeout(()=>{ t.className='toast'; }, 2800);
+}
+
+// ── INIT ───────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', ()=>{
+  document.getElementById('reportDate').value = new Date().toISOString().slice(0,10);
+  document.getElementById('preparedBy').value = 'Wycliff Omoding';
+});
+</script>
+</body>
+</html>
