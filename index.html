@@ -197,6 +197,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 
 <!-- PIN SCREEN -->
 <div class="pin-screen" id="pinScreen">
+  <div id="pinStep" style="display:flex;flex-direction:column;align-items:center;width:100%;">
   <div class="pin-logo">BOU</div>
   <div class="pin-title">DC Monitor</div>
   <div class="pin-sub">Enter your team PIN to access today's monitoring session. Both you and your colleague use the same PIN.</div>
@@ -206,6 +207,21 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
   </div>
   <button class="pin-btn" onclick="submitPin()">Enter</button>
   <div class="pin-hint">The PIN is shared between you and your colleague. It combines with today's date to create a unique session — so tomorrow's session is automatically separate.</div>
+
+  </div><!-- /pinStep -->
+  <!-- API KEY STEP (shown after PIN if no key stored) -->
+  <div id="apiKeyStep" style="display:none;flex-direction:column;align-items:center;width:100%;margin-top:24px;">
+    <div style="width:100%;max-width:300px;margin-bottom:8px;">
+      <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px;">Gemini API Key</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.5;">Enter your free Gemini API key from aistudio.google.com. Saved on this device only — you won't need to enter it again.</div>
+      <div style="position:relative;">
+        <input type="password" id="apiKeyInput" class="pin-input" placeholder="AIza..." style="letter-spacing:0.05em;font-size:14px;width:100%;" autocomplete="off">
+        <button class="pin-toggle" onclick="toggleApiKeyVisibility()" id="apiKeyToggle">👁</button>
+      </div>
+    </div>
+    <button class="pin-btn" onclick="saveApiKey()">Save &amp; Continue</button>
+    <div style="font-size:11px;color:var(--muted);margin-top:10px;text-align:center;">Your key is stored only in this browser. Never shared.</div>
+  </div>
 </div>
 
 <!-- TOPBAR -->
@@ -475,6 +491,7 @@ const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 // ── STATE ─────────────────────────────────────────
 let sessionPin = '';
 let sessionKey = '';
+let geminiKey = '';
 const photos = { hq: [], brs: [] };
 let currentPage = 1;
 
@@ -507,9 +524,37 @@ async function submitPin() {
   if(pin.length < 4) { shakePinInput(); showToast('PIN must be at least 4 digits','red'); return; }
   sessionPin = pin;
   sessionKey = await hashPin(pin);
+  const storedKey = localStorage.getItem('gemini_key');
+  if(storedKey) {
+    geminiKey = storedKey;
+    document.getElementById('pinScreen').classList.add('hidden');
+    document.getElementById('pinIndicator').textContent = '🔒 PIN ' + '•'.repeat(pin.length);
+    loadBrsFromFirebase();
+  } else {
+    document.getElementById('pinStep').style.display='none';
+    document.getElementById('apiKeyStep').style.display='flex';
+  }
+}
+
+function toggleApiKeyVisibility() {
+  const inp = document.getElementById('apiKeyInput');
+  const tog = document.getElementById('apiKeyToggle');
+  if(inp.type==='password'){inp.type='text';tog.textContent='🙈';}
+  else{inp.type='password';tog.textContent='👁';}
+}
+
+function saveApiKey() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if(!key.startsWith('AIza') || key.length < 20) {
+    showToast('Please enter a valid Gemini API key','red');
+    return;
+  }
+  localStorage.setItem('gemini_key', key);
+  geminiKey = key;
   document.getElementById('pinScreen').classList.add('hidden');
-  document.getElementById('pinIndicator').textContent = '🔒 PIN ' + '•'.repeat(pin.length);
+  document.getElementById('pinIndicator').textContent = '🔒 PIN ' + '•'.repeat(sessionPin.length);
   loadBrsFromFirebase();
+  showToast('API key saved to this device ✓','green');
 }
 
 document.getElementById('pinInput').addEventListener('keydown', e => {
@@ -523,9 +568,13 @@ function shakePinInput() {
 }
 
 function lockSession() {
-  if(!confirm('Lock session and return to PIN screen?')) return;
+  const action = confirm('Lock session? Click OK to lock, or Cancel to also clear saved API key.');
+  if(action === false && !confirm('Clear saved API key from this device?')) return;
+  if(action === false) { localStorage.removeItem('gemini_key'); geminiKey=''; showToast('API key cleared','amber'); return; }
   sessionPin=''; sessionKey='';
   document.getElementById('pinInput').value='';
+  document.getElementById('pinStep').style.display='flex';
+  document.getElementById('apiKeyStep').style.display='none';
   document.getElementById('pinScreen').classList.remove('hidden');
 }
 
@@ -702,16 +751,24 @@ async function runExtraction(site) {
 Return ONLY valid JSON with these exact keys (use "" for anything not found):
 {"ahu1":"","ahu2":"","ahu3":"","ups_a_in_l1":"","ups_a_in_l2":"","ups_a_in_l3":"","ups_a_out_l1":"","ups_a_out_l2":"","ups_a_out_l3":"","ups_a_cur_l1":"","ups_a_cur_l2":"","ups_a_cur_l3":"","ups_a_load_l1":"","ups_a_load_l2":"","ups_a_load_l3":"","ups_a_pw_l1":"","ups_a_pw_l2":"","ups_a_pw_l3":"","ups_a_bat_v":"","ups_a_bat_a":"","ups_a_bat_pct":"","ups_a_runtime":"","ups_a_freq":"","ups_a_temp":"","ups_b_in_l1":"","ups_b_in_l2":"","ups_b_in_l3":"","ups_b_out_l1":"","ups_b_out_l2":"","ups_b_out_l3":"","ups_b_cur_l1":"","ups_b_cur_l2":"","ups_b_cur_l3":"","ups_b_load_l1":"","ups_b_load_l2":"","ups_b_load_l3":"","ups_b_pw_l1":"","ups_b_pw_l2":"","ups_b_pw_l3":"","ups_b_bat_v":"","ups_b_bat_a":"","ups_b_bat_pct":"","ups_b_runtime":"","ups_b_freq":"","ups_b_temp":""}
 AHU: number only e.g. "21.6" or "OFF". If one UPS visible, use ups_a_ only. BRS: ups_a_=UPS1, ups_b_=UPS2. HQ: ups_a_=UPS A, ups_b_=UPS B. JSON only, no explanation.`;
+  if(!geminiKey) {
+    bar.className='ai-bar error';
+    bar.textContent='⚠ No API key — lock session and re-enter to add key';
+    return;
+  }
   try {
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1500,messages:[{role:'user',content:[
-        ...photos[site].map(p=>({type:'image',source:{type:'base64',media_type:p.mime,data:p.b64}})),
-        {type:'text',text:prompt}
-      ]}]})
-    });
+    const parts = [
+      ...photos[site].map(p=>({inlineData:{mimeType:p.mime,data:p.b64}})),
+      {text: prompt}
+    ];
+    const resp=await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`,
+      {method:'POST',headers:{'Content-Type':'application/json'},
+       body:JSON.stringify({contents:[{parts}],generationConfig:{temperature:0.1,maxOutputTokens:1500}})}
+    );
     const data=await resp.json();
-    const text=(data.content?.find(c=>c.type==='text')?.text||'').replace(/```[a-z]*|```/g,'').trim();
+    if(data.error) throw new Error(data.error.message);
+    const text=(data.candidates?.[0]?.content?.parts?.[0]?.text||'').replace(/```[a-z]*|```/g,'').trim();
     const parsed=JSON.parse(text);
     fillFields(site,parsed);
     bar.className='ai-bar done';
@@ -719,6 +776,7 @@ AHU: number only e.g. "21.6" or "OFF". If one UPS visible, use ups_a_ only. BRS:
   } catch(err) {
     bar.className='ai-bar error';
     bar.textContent='⚠ Could not read images — enter values manually';
+    console.error(err);
   }
 }
 
