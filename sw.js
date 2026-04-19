@@ -2,7 +2,7 @@
    Caches the app shell so the tool opens even with no signal at BRS.
    Bump SHELL_VERSION to force refresh after deploys. */
 
-const SHELL_VERSION = 'v1.0.1';
+const SHELL_VERSION = 'v1.0.3';
 const CACHE = `dcm-shell-${SHELL_VERSION}`;
 const SHELL = [
   './',

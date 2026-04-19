@@ -11,8 +11,8 @@
 // ============================================================
 const CFG = {
   fbBase: 'https://bou-dc-monitor-default-rtdb.firebaseio.com',
-  geminiModel: 'gemini-1.5-flash',
-  geminiEndpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent',
+  geminiModel: 'gemini-2.5-flash',
+  geminiEndpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
   maxPhotoEdge: 1600,
   photoQuality: 0.85,
   maxThumbnails: 12,
@@ -645,20 +645,27 @@ function updateSyncStatusDisplay() {
   const queued = brs.filter(p => p.state === 'queued').length;
   const syncing = brs.filter(p => p.state === 'syncing').length;
 
+  // Make it tappable to retry whenever there are queued items
+  el.style.cursor = queued > 0 ? 'pointer' : '';
+  el.onclick = queued > 0 ? async () => {
+    toast(`Retrying ${queued} photo${queued > 1 ? 's' : ''}…`, 'info');
+    await drainQueue();
+  } : null;
+
   if (brs.length === 0) {
     el.textContent = 'No BRS photos yet. Take photos on-site — they sync automatically.';
     el.dataset.state = '';
   } else if (queued > 0) {
-    el.textContent = `${queued} photo${queued>1?'s':''} queued for sync (offline)`;
+    el.textContent = `${queued} photo${queued > 1 ? 's' : ''} pending sync — tap to retry`;
     el.dataset.state = 'queued';
   } else if (syncing > 0) {
-    el.textContent = `Syncing ${syncing} photo${syncing>1?'s':''}…`;
+    el.textContent = `Syncing ${syncing} photo${syncing > 1 ? 's' : ''}…`;
     el.dataset.state = '';
   } else if (synced === brs.length) {
-    el.textContent = `✓ ${brs.length} photo${brs.length>1?'s':''} synced to session`;
+    el.textContent = `✓ ${brs.length} photo${brs.length > 1 ? 's' : ''} synced to session`;
     el.dataset.state = 'synced';
   } else {
-    el.textContent = `${brs.length} photo${brs.length>1?'s':''} loaded`;
+    el.textContent = `${brs.length} photo${brs.length > 1 ? 's' : ''} loaded`;
     el.dataset.state = '';
   }
 }
@@ -667,12 +674,8 @@ function updateSyncStatusDisplay() {
 // FIREBASE SYNC (REST + SSE + OFFLINE QUEUE)
 // ============================================================
 async function syncPhotoToFirebase(photo) {
-  if (!S.online) {
-    photo.state = 'queued';
-    enqueue({ op: 'put', id: photo.id, data: { name: photo.name, dataUrl: photo.dataUrl, type: photo.type, uploadedAt: Date.now() } });
-    renderThumbs();
-    return;
-  }
+  // Always attempt the upload — don't trust navigator.onLine, which iOS Safari
+  // reports as false intermittently even on good WiFi.
   photo.state = 'syncing';
   renderThumbs();
   try {
@@ -682,6 +685,8 @@ async function syncPhotoToFirebase(photo) {
     if (!res.ok) throw new Error('Firebase HTTP ' + res.status);
     photo.state = 'synced';
     renderThumbs();
+    // Opportunistically drain any older queued items too
+    drainQueue();
   } catch (e) {
     photo.state = 'queued';
     enqueue({ op: 'put', id: photo.id, data: { name: photo.name, dataUrl: photo.dataUrl, type: photo.type, uploadedAt: Date.now() } });
@@ -697,10 +702,20 @@ function enqueue(item) {
 }
 
 async function drainQueue() {
-  if (!S.online) return;
+  // Always try — don't trust navigator.onLine.
+
+  // First, re-attempt any photos that are marked queued in memory
+  // but might not have a corresponding localStorage queue entry
+  // (covers edge cases where state diverged from the persistent queue).
+  const inMemoryQueued = [];
+  for (const site of ['hq', 'brs']) {
+    S.photos[site].forEach(p => { if (p.state === 'queued') inMemoryQueued.push(p); });
+  }
+
+  // Drain the localStorage queue
   const q = JSON.parse(localStorage.getItem(LS_KEYS.queue) || '[]');
-  if (q.length === 0) return;
   const remaining = [];
+  let success = 0;
   for (const item of q) {
     try {
       if (item.op === 'put') {
@@ -708,20 +723,37 @@ async function drainQueue() {
         const res = await fetch(url, { method: 'PUT', body: JSON.stringify(item.data) });
         if (!res.ok) throw new Error('HTTP ' + res.status);
         // Mark local photo as synced
-        ['hq','brs'].forEach(site => {
+        ['hq', 'brs'].forEach(site => {
           const p = S.photos[site].find(x => x.id === item.id);
-          if (p) { p.state = 'synced'; }
+          if (p) p.state = 'synced';
         });
+        success++;
       }
     } catch (e) {
       remaining.push(item);
     }
   }
   localStorage.setItem(LS_KEYS.queue, JSON.stringify(remaining));
+
+  // Retry any in-memory queued photos that weren't in the localStorage queue
+  for (const p of inMemoryQueued) {
+    if (p.state !== 'queued') continue; // drained above
+    try {
+      const url = `${CFG.fbBase}/sessions/${S.sessionKey}/photos/${p.id}.json`;
+      const body = JSON.stringify({ name: p.name, dataUrl: p.dataUrl, type: p.type, uploadedAt: Date.now() });
+      const res = await fetch(url, { method: 'PUT', body });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      p.state = 'synced';
+      success++;
+    } catch (e) {
+      // leave queued — user can retry later
+    }
+  }
+
   renderThumbs();
   updateMenuCounts();
-  if (remaining.length === 0 && q.length > 0) {
-    toast(`Synced ${q.length} queued photo${q.length>1?'s':''}`, 'success');
+  if (success > 0) {
+    toast(`Synced ${success} photo${success > 1 ? 's' : ''}`, 'success');
   }
 }
 
@@ -757,7 +789,8 @@ function startFirebaseListener() {
   // Poll every 10 seconds for new photos (simpler than SSE wiring, works offline-tolerant)
   clearInterval(startFirebaseListener._poll);
   startFirebaseListener._poll = setInterval(() => {
-    if (!S.online || S.currentStep !== 1) return;
+    // Don't gate on S.online — iOS Safari can be wrong. fetch will fail silently if truly offline.
+    if (S.currentStep !== 1) return;
     fetch(url).then(r => r.ok ? r.json() : null).then(data => {
       if (data && typeof data === 'object') {
         let added = 0;
@@ -799,6 +832,14 @@ function setupNetListeners() {
   };
   window.addEventListener('online', update);
   window.addEventListener('offline', update);
+
+  // Aggressive retry: when user comes back to the tab or focuses the window,
+  // attempt to drain any queued items. Covers iOS Safari's unreliable onLine.
+  window.addEventListener('focus', () => drainQueue());
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) drainQueue();
+  });
+
   update();
 }
 
