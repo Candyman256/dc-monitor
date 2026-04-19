@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1" />
+<meta name="theme-color" content="#0a0e1a" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="DC Monitor" />
+<meta name="mobile-web-app-capable" content="yes" />
+<link rel="manifest" href="manifest.json" />
+<link rel="apple-touch-icon" href="icon.svg" />
+<link rel="icon" href="icon.svg" type="image/svg+xml" />
+<title>DC Monitor | BOU TI&amp;O</title>
+<link rel="preconnect" href="https://rsms.me/" />
+<link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="app.css" />
+<style>
+/* Critical inline CSS for initial paint */
+html,body{margin:0;padding:0;background:#0a0e1a;color:#e6e9f0;font-family:'IBM Plex Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
+.boot{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;background:#0a0e1a;z-index:9999;}
+.boot-logo{width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,#1e3a8a,#3b82f6);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:18px;letter-spacing:0.5px;}
+.boot-spin{width:22px;height:22px;border:2px solid rgba(255,255,255,0.15);border-top-color:#60a5fa;border-radius:50%;animation:bs 0.8s linear infinite;}
+@keyframes bs{to{transform:rotate(360deg);}}
+.boot-msg{font-size:13px;color:#8b94a8;letter-spacing:0.3px;}
+</style>
+</head>
+<body>
+
+<!-- Boot loader (removed once app.js runs) -->
+<div class="boot" id="boot">
+  <div class="boot-logo">BOU</div>
+  <div class="boot-spin"></div>
+  <div class="boot-msg" id="bootMsg">Loading DC Monitor…</div>
+</div>
+
+<!-- Offline indicator pill (top-right, appears when offline) -->
+<div class="net-indicator" id="netIndicator" hidden>
+  <span class="net-dot"></span>
+  <span class="net-label">Offline</span>
+</div>
+
+<!-- =================================================================
+     SCREEN: PIN ENTRY
+     ================================================================= -->
+<section class="screen" id="screenPin" hidden>
+  <div class="card card-narrow">
+    <div class="brand">
+      <div class="brand-logo">BOU</div>
+      <div class="brand-title">DC Monitor</div>
+      <div class="brand-sub">TI&amp;O Department</div>
+    </div>
+    <p class="help">Enter your team PIN to access today's monitoring session. Both you and your colleague use the same PIN.</p>
+    <div class="input-row">
+      <input type="password" inputmode="numeric" pattern="[0-9]*" id="pinInput" class="input input-mono" placeholder="••••" autocomplete="off" maxlength="12" />
+      <button class="input-eye" id="pinEye" aria-label="Toggle PIN visibility" type="button">👁</button>
+    </div>
+    <button class="btn btn-primary btn-block" id="pinSubmit">Enter</button>
+    <div class="footnote">
+      The PIN is shared between you and your colleague. It combines with today's date to create a unique session — so tomorrow's session is automatically separate.
+    </div>
+    <div class="divider-thin"></div>
+    <details class="onboard-receive">
+      <summary>Received a setup link? Paste it here</summary>
+      <div class="onboard-body">
+        <p class="help-sm">Your colleague can share a one-time setup URL or QR code. Paste the URL below to load the PIN and API key at once.</p>
+        <input type="text" id="setupUrlInput" class="input" placeholder="https://…" />
+        <button class="btn btn-ghost btn-block" id="setupUrlApply">Load from URL</button>
+      </div>
+    </details>
+  </div>
+</section>
+
+<!-- =================================================================
+     SCREEN: API KEY ENTRY
+     ================================================================= -->
+<section class="screen" id="screenKey" hidden>
+  <div class="card card-narrow">
+    <div class="brand">
+      <div class="brand-logo">BOU</div>
+      <div class="brand-title">Gemini API Key</div>
+    </div>
+    <p class="help">Enter your free Gemini API key from <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com</a>. Saved on this device only — you won't need to enter it again.</p>
+    <div class="input-row">
+      <input type="password" id="keyInput" class="input input-mono" placeholder="AIza…" autocomplete="off" />
+      <button class="input-eye" id="keyEye" aria-label="Toggle key visibility" type="button">👁</button>
+    </div>
+    <button class="btn btn-primary btn-block" id="keySubmit">Save &amp; Continue</button>
+    <button class="btn btn-ghost btn-block btn-sm" id="keySkip">Skip — I'll enter values manually</button>
+    <div class="footnote">Your key is stored only in this browser. Never shared.</div>
+  </div>
+</section>
+
+<!-- =================================================================
+     APP SHELL (Step 1, 2, 3 live inside)
+     ================================================================= -->
+<section class="app" id="app" hidden>
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="app-header-inner">
+      <div class="app-brand">
+        <div class="app-brand-logo">BOU</div>
+        <div class="app-brand-text">
+          <div class="app-brand-title">DC Monitor</div>
+          <div class="app-brand-sub" id="sessionPillLabel">TI&amp;O Department</div>
+        </div>
+      </div>
+      <div class="app-header-meta">
+        <button class="pin-chip" id="openMenu" aria-label="Menu" type="button">
+          <span class="pin-chip-icon">🔒</span>
+          <span class="pin-chip-label">PIN ••••</span>
+          <span class="pin-chip-caret">▾</span>
+        </button>
+      </div>
+    </div>
+    <div class="step-strip">
+      <div class="step" data-step="1"><span class="step-num">1</span><span class="step-name">Upload</span></div>
+      <div class="step-sep"></div>
+      <div class="step" data-step="2"><span class="step-num">2</span><span class="step-name">Review</span></div>
+      <div class="step-sep"></div>
+      <div class="step" data-step="3"><span class="step-num">3</span><span class="step-name">Send</span></div>
+    </div>
+  </header>
+
+  <!-- Resume banner (shows if auto-save found) -->
+  <div class="resume-banner" id="resumeBanner" hidden>
+    <div class="resume-text">
+      <strong>Resume previous session?</strong>
+      <span id="resumeTime">Auto-saved draft available</span>
+    </div>
+    <div class="resume-actions">
+      <button class="btn btn-ghost btn-sm" id="resumeDiscard">Start fresh</button>
+      <button class="btn btn-primary btn-sm" id="resumeLoad">Resume</button>
+    </div>
+  </div>
+
+  <!-- =========================
+       STEP 1: Upload
+       ========================= -->
+  <section class="step-panel" id="step1">
+    <div class="panel-head">
+      <div class="panel-step-pill">Step 1 of 3</div>
+      <h1 class="panel-title">Upload Photos</h1>
+      <p class="panel-sub">At BRS: take photos on your iPhone — they sync to your laptop automatically. At your desk: paste HQ portal screenshots with Ctrl+V.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h2 class="card-title">Report Info</h2>
+      </div>
+      <div class="grid-2">
+        <label class="field">
+          <span class="field-label">Date</span>
+          <input type="date" id="reportDate" class="input" />
+        </label>
+        <label class="field">
+          <span class="field-label">Prepared by</span>
+          <input type="text" id="reportAuthor" class="input" placeholder="Your name" />
+        </label>
+      </div>
+    </div>
+
+    <!-- BRS upload block -->
+    <div class="card">
+      <div class="card-head card-head-split">
+        <div>
+          <h2 class="card-title">BRS Data Center</h2>
+          <p class="card-sub">Take photos on-site — synced to your laptop</p>
+        </div>
+        <span class="badge badge-brs">BRS</span>
+      </div>
+      <div class="sync-status" id="brsSyncStatus">Checking for saved BRS photos…</div>
+      <div class="upload-grid">
+        <label class="upload-tile upload-camera" data-role="brs-camera">
+          <input type="file" accept="image/*" capture="environment" multiple hidden data-upload="brs" />
+          <div class="upload-icon">📷</div>
+          <div class="upload-label">Camera</div>
+          <div class="upload-hint">Take photos</div>
+        </label>
+        <label class="upload-tile">
+          <input type="file" accept="image/*,.heic,.heif" multiple hidden data-upload="brs" />
+          <div class="upload-icon">🖼</div>
+          <div class="upload-label">Gallery / Files</div>
+          <div class="upload-hint">Choose images</div>
+        </label>
+      </div>
+      <div class="thumbs" id="brsThumbs" data-empty="No photos yet"></div>
+    </div>
+
+    <!-- HQ upload block -->
+    <div class="card">
+      <div class="card-head card-head-split">
+        <div>
+          <h2 class="card-title">HQ Data Center</h2>
+          <p class="card-sub">Paste portal screenshots or upload files</p>
+        </div>
+        <span class="badge badge-hq">HQ</span>
+      </div>
+      <div class="paste-zone" id="pasteZone" tabindex="0">
+        <div class="paste-zone-icon">📋</div>
+        <div class="paste-zone-title">Click here then Ctrl+V to paste a screenshot</div>
+        <div class="paste-zone-sub">Snipping Tool · Snip &amp; Sketch · Print Screen</div>
+      </div>
+      <div class="upload-grid">
+        <label class="upload-tile">
+          <input type="file" accept="image/*" multiple hidden data-upload="hq" />
+          <div class="upload-icon">🖼</div>
+          <div class="upload-label">Upload files</div>
+          <div class="upload-hint">Screenshots or photos</div>
+        </label>
+        <label class="upload-tile upload-camera" data-role="hq-camera">
+          <input type="file" accept="image/*" capture="environment" multiple hidden data-upload="hq" />
+          <div class="upload-icon">📷</div>
+          <div class="upload-label">Camera</div>
+          <div class="upload-hint">iPhone only</div>
+        </label>
+      </div>
+      <div class="thumbs" id="hqThumbs" data-empty="No photos yet"></div>
+    </div>
+
+    <p class="step-note">All photos optional — fill values manually in step 2</p>
+
+    <div class="step-actions">
+      <button class="btn btn-primary btn-block" id="toStep2">Continue →</button>
+    </div>
+  </section>
+
+  <!-- =========================
+       STEP 2: Review (tabbed)
+       ========================= -->
+  <section class="step-panel" id="step2" hidden>
+    <div class="panel-head">
+      <div class="panel-step-pill">Step 2 of 3</div>
+      <h1 class="panel-title">Review Readings</h1>
+      <p class="panel-sub">Verify extracted values. Blue fields were filled from photos — edit anything that looks wrong.</p>
+    </div>
+
+    <div class="extract-status" id="extractStatus" hidden></div>
+
+    <!-- Tab nav -->
+    <div class="tabnav" role="tablist">
+      <button class="tab tab-active" data-tab="hq" role="tab" aria-selected="true">
+        <span class="tab-badge tab-badge-hq">HQ</span>
+        <span class="tab-label">HQ Readings</span>
+      </button>
+      <button class="tab" data-tab="brs" role="tab">
+        <span class="tab-badge tab-badge-brs">BRS</span>
+        <span class="tab-label">BRS Readings</span>
+      </button>
+      <button class="tab" data-tab="alerts" role="tab">
+        <span class="tab-badge tab-badge-alert">!</span>
+        <span class="tab-label">Alerts</span>
+      </button>
+    </div>
+
+    <!-- HQ tab -->
+    <div class="tab-panel tab-panel-active" data-tabpanel="hq">
+      <div class="card">
+        <div class="card-head">
+          <h2 class="card-title">Server Room — AHU Temperatures</h2>
+          <p class="card-sub">Normal range 18–24 °C</p>
+        </div>
+        <div class="ahu-grid" data-ahu-site="hq">
+          <!-- populated by JS: AHU 1, 2, 3 -->
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2 class="card-title">UPS Readings</h2></div>
+        <div class="ups-list" data-ups-site="hq">
+          <!-- populated: UPS A, UPS B -->
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2 class="card-title">General Checks — HQ</h2></div>
+        <div class="checks-grid" data-checks-site="hq">
+          <!-- populated: Access Control, Lighting, Cameras, Fire Suppression, Clutter -->
+        </div>
+      </div>
+    </div>
+
+    <!-- BRS tab -->
+    <div class="tab-panel" data-tabpanel="brs" hidden>
+      <div class="card">
+        <div class="card-head">
+          <h2 class="card-title">Server Room — AHU Temperatures</h2>
+          <p class="card-sub">Normal range 18–24 °C</p>
+        </div>
+        <div class="ahu-grid" data-ahu-site="brs"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2 class="card-title">UPS Readings</h2></div>
+        <div class="ups-list" data-ups-site="brs"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2 class="card-title">General Checks — BRS</h2></div>
+        <div class="checks-grid" data-checks-site="brs"></div>
+      </div>
+    </div>
+
+    <!-- Alerts tab -->
+    <div class="tab-panel" data-tabpanel="alerts" hidden>
+      <div class="card">
+        <div class="card-head">
+          <h2 class="card-title">Active Alert</h2>
+          <p class="card-sub">Leave blank if no active alert</p>
+        </div>
+        <label class="field">
+          <span class="field-label">Alert Title</span>
+          <input type="text" id="alertTitle" class="input" placeholder="e.g. AHU 3 offline on HQ server room" />
+        </label>
+        <label class="field">
+          <span class="field-label">Description &amp; Action Taken</span>
+          <textarea id="alertDesc" class="input input-textarea" rows="4" placeholder="Describe the alert and what has been done so far…"></textarea>
+        </label>
+        <label class="field">
+          <span class="field-label">Assigned Owner</span>
+          <input type="text" id="alertOwner" class="input" placeholder="Name of engineer or team" />
+        </label>
+      </div>
+    </div>
+
+    <div class="step-actions step-actions-row">
+      <button class="btn btn-ghost" id="backTo1">←</button>
+      <button class="btn btn-primary btn-grow" id="toStep3">Preview Report →</button>
+    </div>
+  </section>
+
+  <!-- =========================
+       STEP 3: Send
+       ========================= -->
+  <section class="step-panel" id="step3" hidden>
+    <div class="panel-head">
+      <div class="panel-step-pill">Step 3 of 3</div>
+      <h1 class="panel-title">Send Report</h1>
+      <p class="panel-sub">Preview the report then copy to Outlook or download.</p>
+    </div>
+
+    <div class="card card-preview-wrap">
+      <div class="card-head card-head-split">
+        <div>
+          <h2 class="card-title">Preview</h2>
+          <p class="card-sub">What management will see</p>
+        </div>
+        <button class="btn btn-ghost btn-sm" id="refreshPreview" type="button">↻ Refresh</button>
+      </div>
+      <div class="preview-frame">
+        <iframe id="previewFrame" title="Report preview"></iframe>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2 class="card-title">Send via Outlook</h2></div>
+      <div class="grid-2">
+        <label class="field">
+          <span class="field-label">To</span>
+          <input type="text" id="mailTo" class="input" placeholder="alfred@bou.or.ug" />
+        </label>
+        <label class="field">
+          <span class="field-label">Subject</span>
+          <input type="text" id="mailSubject" class="input" />
+        </label>
+      </div>
+
+      <div class="action-stack">
+        <button class="btn btn-primary btn-block" id="copyHtml">
+          <span class="btn-icon">⎘</span>
+          <span class="btn-body">
+            <span class="btn-label">Copy to clipboard as HTML</span>
+            <span class="btn-hint">Then Ctrl+V in a new Outlook email</span>
+          </span>
+        </button>
+        <button class="btn btn-secondary btn-block" id="downloadEml">
+          <span class="btn-icon">📧</span>
+          <span class="btn-body">
+            <span class="btn-label">Download as .eml</span>
+            <span class="btn-hint">Double-click to open in Outlook</span>
+          </span>
+        </button>
+        <div class="action-row">
+          <button class="btn btn-ghost btn-sm btn-grow" id="downloadHtml">⬇ HTML file</button>
+          <button class="btn btn-ghost btn-sm btn-grow" id="saveToHistory">⭐ Save to history</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head card-head-split">
+        <div>
+          <h2 class="card-title">Recent Reports</h2>
+          <p class="card-sub">Last 10 reports stored on this device</p>
+        </div>
+      </div>
+      <div class="history-list" id="historyList" data-empty="No saved reports yet">
+      </div>
+    </div>
+
+    <div class="step-actions step-actions-row">
+      <button class="btn btn-ghost" id="backTo2">←</button>
+      <button class="btn btn-secondary btn-grow" id="newReport">↺ New Report</button>
+    </div>
+  </section>
+</section>
+
+<!-- =================================================================
+     MENU SHEET
+     ================================================================= -->
+<div class="sheet" id="menuSheet" hidden>
+  <div class="sheet-backdrop" data-close-sheet></div>
+  <div class="sheet-panel">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <div class="sheet-title">Session &amp; Settings</div>
+      <button class="sheet-close" data-close-sheet aria-label="Close" type="button">✕</button>
+    </div>
+    <div class="sheet-body">
+      <div class="sheet-item">
+        <div class="sheet-item-label">Session</div>
+        <div class="sheet-item-value" id="sheetSessionKey">—</div>
+      </div>
+      <div class="sheet-item">
+        <div class="sheet-item-label">Network</div>
+        <div class="sheet-item-value" id="sheetNetStatus">—</div>
+      </div>
+      <div class="sheet-item">
+        <div class="sheet-item-label">Queued uploads</div>
+        <div class="sheet-item-value" id="sheetQueueCount">0</div>
+      </div>
+      <div class="sheet-divider"></div>
+      <button class="sheet-btn" id="shareSetup">
+        <span class="sheet-btn-icon">📲</span>
+        <span class="sheet-btn-body">
+          <span class="sheet-btn-label">Share setup to another device</span>
+          <span class="sheet-btn-hint">Generates a one-time QR code</span>
+        </span>
+      </button>
+      <button class="sheet-btn" id="changeKey">
+        <span class="sheet-btn-icon">🔑</span>
+        <span class="sheet-btn-body">
+          <span class="sheet-btn-label">Change Gemini API key</span>
+        </span>
+      </button>
+      <button class="sheet-btn" id="retryQueue">
+        <span class="sheet-btn-icon">↻</span>
+        <span class="sheet-btn-body">
+          <span class="sheet-btn-label">Retry queued syncs</span>
+        </span>
+      </button>
+      <button class="sheet-btn sheet-btn-danger" id="logout">
+        <span class="sheet-btn-icon">🚪</span>
+        <span class="sheet-btn-body">
+          <span class="sheet-btn-label">Sign out &amp; clear session</span>
+        </span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- =================================================================
+     QR SHARE SHEET
+     ================================================================= -->
+<div class="sheet" id="qrSheet" hidden>
+  <div class="sheet-backdrop" data-close-sheet></div>
+  <div class="sheet-panel sheet-panel-compact">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <div class="sheet-title">Share Setup</div>
+      <button class="sheet-close" data-close-sheet aria-label="Close" type="button">✕</button>
+    </div>
+    <div class="sheet-body sheet-body-centered">
+      <p class="help-sm">Scan with the other device's camera. PIN and API key will transfer. The link works once and expires in 2 minutes.</p>
+      <div class="qr-box" id="qrBox"></div>
+      <div class="qr-countdown" id="qrCountdown">Expires in 2:00</div>
+      <input type="text" id="qrUrlDisplay" class="input input-mono" readonly style="font-size:11px" />
+      <button class="btn btn-ghost btn-block btn-sm" id="copyQrUrl">⎘ Copy URL instead</button>
+    </div>
+  </div>
+</div>
+
+<!-- =================================================================
+     TOAST
+     ================================================================= -->
+<div class="toast" id="toast" hidden></div>
+
+<!-- =================================================================
+     ERROR DETAIL MODAL
+     ================================================================= -->
+<div class="sheet" id="errSheet" hidden>
+  <div class="sheet-backdrop" data-close-sheet></div>
+  <div class="sheet-panel">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <div class="sheet-title" id="errSheetTitle">Error details</div>
+      <button class="sheet-close" data-close-sheet aria-label="Close" type="button">✕</button>
+    </div>
+    <div class="sheet-body">
+      <div class="err-summary" id="errSummary"></div>
+      <div class="err-details">
+        <div class="err-details-label">Technical details</div>
+        <pre class="err-pre" id="errPre"></pre>
+      </div>
+      <button class="btn btn-ghost btn-block btn-sm" id="errCopy">⎘ Copy details</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js" defer></script>
+</body>
+</html>

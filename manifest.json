@@ -1,0 +1,15 @@
+{
+  "name": "BOU DC Monitor",
+  "short_name": "DC Monitor",
+  "description": "Data center monitoring report tool for Bank of Uganda TI&O",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0a0e1a",
+  "theme_color": "#0a0e1a",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}
