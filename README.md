@@ -123,6 +123,25 @@ To force JPEG: on iPhone, Settings → Camera → Formats → **Most Compatible*
 - Sessions are not automatically cleaned up server-side yet. If you want to purge a session: on the device, menu → Sign out. (Server-side cleanup TBD — see Backlog.)
 - Reports in history are stored only on the device.
 
+## Branding
+
+The app uses the Bank of Uganda brand palette: **crimson, gold, and ink black**, drawn from BOU's official heraldic banner. The built-in brand mark is a stylized shield with the three-light-bulb gold stripe, red/black fields, and scales — evoking the coat of arms without using copyrighted artwork.
+
+### Using the official BOU logo
+
+If you have BOU's official logo (from the internal brand kit or Corporate Affairs department), drop it into the repo root with one of these exact filenames and the app will swap it in automatically everywhere the "BOU" mark appears:
+
+- `logo-bou.svg` (preferred — scales crisp at all sizes)
+- `logo-bou.png` (fallback — use a transparent background, at least 256×256 px)
+
+No code changes required. On next deploy the app detects the file and uses it in:
+- The PIN screen header
+- The API key screen header
+- The sticky app header
+- The boot splash (still shows the default briefly while loading)
+
+The email report banner still uses the text "Bank of Uganda" rather than an embedded logo — this is intentional. Most email clients block remote images by default, which would leave a broken image icon in the report. Text always renders.
+
 ## Backlog / Ideas
 
 - Server-side TTL on Firebase sessions (auto-delete after 7 days)

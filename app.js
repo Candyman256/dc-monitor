@@ -39,12 +39,12 @@ const UPS_PARAMS = [
   { key: 'current', label: 'Current (A)', threePhase: true, type: 'current' },
   { key: 'load', label: 'Load (%)', threePhase: true, type: 'percent' },
   { key: 'power', label: 'Power (kW)', threePhase: true, type: 'kw' },
-  { key: 'batVoltage', label: 'Bat. Voltage (V)', threePhase: false, type: 'batVoltage' },
-  { key: 'batCurrent', label: 'Bat. Current (A)', threePhase: false, type: 'current' },
-  { key: 'batCapacity', label: 'Bat. Capacity (%)', threePhase: false, type: 'percent' },
+  { key: 'batVoltage', label: 'Battery Voltage (V)', threePhase: false, type: 'batVoltage' },
+  { key: 'batCurrent', label: 'Battery Current (A)', threePhase: false, type: 'current' },
+  { key: 'batCapacity', label: 'Battery Capacity (%)', threePhase: false, type: 'percent' },
   { key: 'runtime', label: 'Runtime (min)', threePhase: false, type: 'runtime' },
   { key: 'frequency', label: 'Frequency (Hz)', threePhase: false, type: 'frequency' },
-  { key: 'upsTemp', label: 'UPS Temp (°C)', threePhase: false, type: 'temp' },
+  { key: 'upsTemp', label: 'UPS Temperature (°C)', threePhase: false, type: 'temp' },
 ];
 
 // Validation ranges (min, max, warnBelow, warnAbove)
@@ -216,6 +216,9 @@ async function boot() {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }
 
+  // Try to load an official BOU logo if present in the repo
+  tryLoadBrandLogo();
+
   // Set up global listeners
   setupNetListeners();
   setupSheetListeners();
@@ -283,6 +286,32 @@ async function submitPin() {
 
 function togglePwd(input) {
   input.type = input.type === 'password' ? 'text' : 'password';
+}
+
+// ============================================================
+// BRAND LOGO — use an official BOU logo if the user has placed
+// one in the repo root (logo-bou.svg or logo-bou.png).
+// Otherwise the built-in "BOU" text mark is used.
+// ============================================================
+function tryLoadBrandLogo() {
+  const candidates = ['logo-bou.svg', 'logo-bou.png'];
+  const tryNext = (idx) => {
+    if (idx >= candidates.length) return;
+    const url = candidates[idx];
+    const img = new Image();
+    img.onload = () => applyBrandLogo(url);
+    img.onerror = () => tryNext(idx + 1);
+    img.src = url + '?v=' + Date.now(); // bust cache
+  };
+  tryNext(0);
+}
+
+function applyBrandLogo(url) {
+  document.querySelectorAll('.brand-logo, .app-brand-logo').forEach(el => {
+    el.innerHTML = `<img src="${url}" alt="Bank of Uganda">`;
+    el.style.background = '#FFFFFF';
+    el.style.padding = '0';
+  });
 }
 
 // ============================================================
@@ -976,37 +1005,53 @@ function renderReviewUI() {
       const block = document.createElement('div');
       block.className = 'ups-block';
       block.dataset.open = idx === 0 ? 'true' : 'false';
+
       let rows = '';
       UPS_PARAMS.forEach(p => {
+        // Extract the unit from the label, e.g. "Input (V)" → "Input" + "V"
+        const m = p.label.match(/^(.+?)\s*\(([^)]+)\)\s*$/);
+        const labelText = m ? m[1] : p.label;
+        const unit = m ? m[2] : '';
+        const labelHtml = `<div class="ups-row-label"><span>${escapeHtml(labelText)}</span>${unit ? `<span class="unit">${escapeHtml(unit)}</span>` : ''}</div>`;
+
         if (p.threePhase) {
           const v = ups[p.key];
           const aiCls = v.fromAi ? ' input-from-ai' : '';
-          rows += `<tr>
-            <td class="ups-param">${p.label}</td>
-            <td><input type="text" inputmode="decimal" class="${aiCls}" data-field="ups" data-site="${site}" data-ups="${name}" data-param="${p.key}" data-phase="L1" data-type="${p.type}" value="${v.L1}" /></td>
-            <td><input type="text" inputmode="decimal" class="${aiCls}" data-field="ups" data-site="${site}" data-ups="${name}" data-param="${p.key}" data-phase="L2" data-type="${p.type}" value="${v.L2}" /></td>
-            <td><input type="text" inputmode="decimal" class="${aiCls}" data-field="ups" data-site="${site}" data-ups="${name}" data-param="${p.key}" data-phase="L3" data-type="${p.type}" value="${v.L3}" /></td>
-          </tr>`;
+          rows += `
+            <div class="ups-row ups-row-tri">
+              ${labelHtml}
+              <div class="ups-row-phases">
+                <label class="ups-phase">
+                  <span class="ups-phase-tag">L1</span>
+                  <input type="text" inputmode="decimal" class="${aiCls}" data-field="ups" data-site="${site}" data-ups="${name}" data-param="${p.key}" data-phase="L1" data-type="${p.type}" value="${escapeHtml(v.L1)}" />
+                </label>
+                <label class="ups-phase">
+                  <span class="ups-phase-tag">L2</span>
+                  <input type="text" inputmode="decimal" class="${aiCls}" data-field="ups" data-site="${site}" data-ups="${name}" data-param="${p.key}" data-phase="L2" data-type="${p.type}" value="${escapeHtml(v.L2)}" />
+                </label>
+                <label class="ups-phase">
+                  <span class="ups-phase-tag">L3</span>
+                  <input type="text" inputmode="decimal" class="${aiCls}" data-field="ups" data-site="${site}" data-ups="${name}" data-param="${p.key}" data-phase="L3" data-type="${p.type}" value="${escapeHtml(v.L3)}" />
+                </label>
+              </div>
+            </div>`;
         } else {
           const v = ups[p.key];
           const aiCls = v.fromAi ? ' input-from-ai' : '';
-          rows += `<tr>
-            <td class="ups-param">${p.label}</td>
-            <td colspan="3"><input type="text" inputmode="decimal" class="${aiCls} ups-single-input" data-field="ups" data-site="${site}" data-ups="${name}" data-param="${p.key}" data-type="${p.type}" value="${v.value}" /></td>
-          </tr>`;
+          rows += `
+            <div class="ups-row ups-row-single">
+              ${labelHtml}
+              <input type="text" inputmode="decimal" class="ups-single-input${aiCls}" data-field="ups" data-site="${site}" data-ups="${name}" data-param="${p.key}" data-type="${p.type}" value="${escapeHtml(v.value)}" />
+            </div>`;
         }
       });
+
       block.innerHTML = `
         <div class="ups-head" data-toggle-ups>
-          <div><span class="ups-head-title">${name}</span><span class="ups-head-sub">${idx===0?'Primary':'Secondary'}</span></div>
+          <div><span class="ups-head-title">${name}</span><span class="ups-head-sub">${idx === 0 ? 'Primary' : 'Secondary'}</span></div>
           <div class="ups-head-caret">▾</div>
         </div>
-        <div class="ups-body">
-          <table class="ups-table">
-            <thead><tr><th class="ups-param">Parameter</th><th>L1</th><th>L2</th><th>L3</th></tr></thead>
-            <tbody>${rows}</tbody>
-          </table>
-        </div>
+        <div class="ups-body">${rows}</div>
       `;
       block.querySelector('[data-toggle-ups]').onclick = () => {
         block.dataset.open = block.dataset.open === 'true' ? 'false' : 'true';
@@ -1508,13 +1553,13 @@ function generateReportHtml() {
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="680" style="width:100%;max-width:680px;margin:0 auto;background:#ffffff;">
 
       <!-- Banner -->
-      <tr><td style="background:#0b2558;padding:20px 28px;color:#ffffff;">
+      <tr><td style="background:#7F1D1D;padding:20px 28px;color:#ffffff;">
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
           <tr>
-            <td style="font-size:13px;letter-spacing:0.4px;text-transform:uppercase;font-weight:600;color:#93c5fd;">
+            <td style="font-size:13px;letter-spacing:0.4px;text-transform:uppercase;font-weight:600;color:#FCD34D;">
               Bank of Uganda
             </td>
-            <td align="right" style="font-size:12px;color:#bfdbfe;">${escapeHtml(dateStr)}</td>
+            <td align="right" style="font-size:12px;color:#FED7AA;">${escapeHtml(dateStr)}</td>
           </tr>
           <tr><td colspan="2" style="font-size:14px;color:#ffffff;padding-top:4px;">
             Technology Infrastructure &amp; Operations Department
@@ -1523,14 +1568,14 @@ function generateReportHtml() {
       </td></tr>
 
       <!-- Hero -->
-      <tr><td style="background:linear-gradient(135deg,#1e3a8a,#3b82f6);padding:32px 28px;color:#ffffff;">
-        <div style="font-size:12px;letter-spacing:1px;text-transform:uppercase;font-weight:600;color:#bfdbfe;margin-bottom:8px;">
+      <tr><td style="background:linear-gradient(135deg,#991B1B,#B45309);padding:32px 28px;color:#ffffff;">
+        <div style="font-size:12px;letter-spacing:1px;text-transform:uppercase;font-weight:600;color:#FDE68A;margin-bottom:8px;">
           Data Center Status Report
         </div>
         <div style="font-size:26px;font-weight:600;letter-spacing:-0.3px;margin-bottom:6px;">
           HQ &amp; BRS
         </div>
-        <div style="font-size:13px;color:#bfdbfe;">
+        <div style="font-size:13px;color:#FED7AA;">
           Prepared by ${escapeHtml(author)}
         </div>
       </td></tr>
@@ -1636,12 +1681,13 @@ function generateReportHtml() {
 }
 
 function siteOverviewCard(site, alert) {
-  const color = site === 'HQ' ? '#3b82f6' : '#8b5cf6';
-  const bg = site === 'HQ' ? '#eff6ff' : '#f5f3ff';
-  const borderColor = site === 'HQ' ? '#bfdbfe' : '#ddd6fe';
-  const statusBg = alert ? '#fef2f2' : '#f0fdf4';
-  const statusColor = alert ? '#991b1b' : '#166534';
-  const statusBorder = alert ? '#fecaca' : '#bbf7d0';
+  const isHQ = site === 'HQ';
+  const color = isHQ ? '#B91C1C' : '#B45309';
+  const bg = isHQ ? '#FEF2F2' : '#FFFBEB';
+  const borderColor = isHQ ? '#FECACA' : '#FDE68A';
+  const statusBg = alert ? '#FEF2F2' : '#F0FDF4';
+  const statusColor = alert ? '#991B1B' : '#166534';
+  const statusBorder = alert ? '#FECACA' : '#BBF7D0';
   const statusText = alert ? '⚠ Alert Detected' : '✓ All Systems Normal';
   return `
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:${bg};border:1px solid ${borderColor};border-radius:8px;overflow:hidden;">
@@ -1657,7 +1703,7 @@ function siteOverviewCard(site, alert) {
 }
 
 function ahuSection(site, ahus) {
-  const color = site === 'HQ' ? '#3b82f6' : '#8b5cf6';
+  const color = site === 'HQ' ? '#B91C1C' : '#B45309';
   const rows = ahus.map((a, i) => {
     const temp = parseFloat(a.temp);
     const isValid = !isNaN(temp);
@@ -1712,7 +1758,7 @@ function ahuSection(site, ahus) {
 
 function upsCard(site, name, ups) {
   const hasData = hasUpsData(ups);
-  const color = site === 'HQ' ? '#3b82f6' : '#8b5cf6';
+  const color = site === 'HQ' ? '#B91C1C' : '#B45309';
 
   if (!hasData) {
     return `<td width="25%" style="padding:0 3px;vertical-align:top;">
@@ -1753,7 +1799,7 @@ function upsCard(site, name, ups) {
 }
 
 function checksCard(site, checks, order) {
-  const color = site === 'HQ' ? '#3b82f6' : '#8b5cf6';
+  const color = site === 'HQ' ? '#B91C1C' : '#B45309';
   const rows = order.map(c => {
     const st = checks[c] || 'ok';
     const badge = st === 'alert'

@@ -4,43 +4,52 @@
    ============================================================ */
 
 :root {
-  /* Backgrounds */
-  --bg-0: #0a0e1a;
-  --bg-1: #0f1424;
-  --bg-2: #151b2e;
-  --bg-3: #1c2338;
-  --bg-card: #141a2b;
-  --bg-input: #0e1322;
+  /* Backgrounds — warm dark palette (charcoal with brown undertones, not cool blue) */
+  --bg-0: #0F0A0A;
+  --bg-1: #14100F;
+  --bg-2: #1C1615;
+  --bg-3: #2A201F;
+  --bg-card: #1A1413;
+  --bg-input: #120D0C;
 
-  /* Borders */
-  --border-0: rgba(255,255,255,0.06);
-  --border-1: rgba(255,255,255,0.10);
-  --border-2: rgba(255,255,255,0.16);
+  /* Borders — warm neutrals */
+  --border-0: rgba(255,245,235,0.06);
+  --border-1: rgba(255,245,235,0.10);
+  --border-2: rgba(255,245,235,0.16);
 
-  /* Text */
-  --text-0: #e6e9f0;
-  --text-1: #a9b1c6;
-  --text-2: #8b94a8;
-  --text-3: #636b80;
+  /* Text — warm off-white and stone greys */
+  --text-0: #F5F0E8;
+  --text-1: #B8AFA4;
+  --text-2: #8A817A;
+  --text-3: #5F5751;
 
-  /* Brand */
-  --navy: #1e3a8a;
-  --navy-light: #3b5bd4;
-  --blue: #3b82f6;
-  --blue-light: #60a5fa;
-  --blue-dim: rgba(59,130,246,0.12);
+  /* BOU Brand — crimson and gold from the official heraldic banner */
+  --crimson: #B91C1C;
+  --crimson-deep: #991B1B;
+  --crimson-dark: #7F1D1D;
+  --crimson-dim: rgba(185,28,28,0.14);
+  --gold: #D97706;
+  --gold-light: #F59E0B;
+  --gold-dim: rgba(217,119,6,0.16);
+
+  /* Legacy aliases kept for compatibility with existing rules */
+  --navy: var(--crimson-dark);
+  --navy-light: var(--crimson);
+  --blue: var(--crimson);
+  --blue-light: var(--gold-light);
+  --blue-dim: var(--crimson-dim);
 
   /* Status */
-  --green: #22c55e;
-  --green-dim: rgba(34,197,94,0.15);
-  --amber: #f59e0b;
-  --amber-dim: rgba(245,158,11,0.15);
-  --red: #ef4444;
-  --red-dim: rgba(239,68,68,0.15);
+  --green: #10B981;
+  --green-dim: rgba(16,185,129,0.14);
+  --amber: #F59E0B;
+  --amber-dim: rgba(245,158,11,0.14);
+  --red: #DC2626;
+  --red-dim: rgba(220,38,38,0.14);
 
-  /* Site accents */
-  --hq: #3b82f6;
-  --brs: #8b5cf6;
+  /* Site accents — HQ uses crimson, BRS uses gold (both BOU brand colors) */
+  --hq: #B91C1C;
+  --brs: #B45309;
 
   /* Sizing */
   --radius-sm: 8px;
@@ -48,9 +57,9 @@
   --radius-lg: 16px;
   --radius-xl: 20px;
 
-  /* Shadows */
-  --shadow-1: 0 2px 8px rgba(0,0,0,0.3);
-  --shadow-2: 0 8px 24px rgba(0,0,0,0.4);
+  /* Shadows — warm */
+  --shadow-1: 0 2px 8px rgba(0,0,0,0.4);
+  --shadow-2: 0 10px 28px rgba(0,0,0,0.5);
 
   /* Safe areas */
   --safe-top: env(safe-area-inset-top, 0px);
@@ -132,8 +141,8 @@ a:hover { text-decoration: underline; }
   justify-content: center;
   padding: calc(24px + var(--safe-top)) 16px calc(24px + var(--safe-bottom));
   background:
-    radial-gradient(ellipse at top, rgba(30,58,138,0.25), transparent 60%),
-    radial-gradient(ellipse at bottom, rgba(139,92,246,0.12), transparent 60%),
+    radial-gradient(ellipse at top, rgba(185,28,28,0.22), transparent 60%),
+    radial-gradient(ellipse at bottom, rgba(217,119,6,0.12), transparent 60%),
     var(--bg-0);
 }
 
@@ -162,7 +171,7 @@ a:hover { text-decoration: underline; }
   width: 56px;
   height: 56px;
   border-radius: 14px;
-  background: linear-gradient(135deg, var(--navy), var(--blue));
+  background: linear-gradient(135deg, var(--crimson-deep), var(--gold));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -170,7 +179,14 @@ a:hover { text-decoration: underline; }
   font-weight: 700;
   font-size: 16px;
   letter-spacing: 0.5px;
-  box-shadow: 0 4px 16px rgba(59,130,246,0.25);
+  box-shadow: 0 4px 16px rgba(185,28,28,0.28);
+  overflow: hidden;
+}
+.brand-logo img, .app-brand-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 6px;
 }
 .brand-title {
   font-size: 22px;
@@ -257,11 +273,11 @@ a:hover { text-decoration: underline; }
 }
 .field-warn-msg::before { content: "⚠"; }
 
-/* From-AI highlight */
+/* From-AI highlight — gold (BOU accent color) */
 .input-from-ai {
-  border-color: var(--blue) !important;
-  background: var(--blue-dim) !important;
-  color: #bfdbfe;
+  border-color: var(--gold) !important;
+  background: var(--gold-dim) !important;
+  color: #FCD34D;
 }
 
 .btn {
@@ -286,13 +302,13 @@ a:hover { text-decoration: underline; }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--navy), var(--blue));
+  background: linear-gradient(135deg, var(--crimson), var(--crimson-deep));
   color: #fff;
   border-color: transparent;
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(59,130,246,0.25);
+  box-shadow: 0 2px 8px rgba(185,28,28,0.28);
 }
-.btn-primary:hover:not(:disabled) { box-shadow: 0 4px 16px rgba(59,130,246,0.35); }
+.btn-primary:hover:not(:disabled) { box-shadow: 0 4px 16px rgba(185,28,28,0.38); }
 
 .btn-secondary {
   background: var(--bg-2);
@@ -382,7 +398,7 @@ a:hover { text-decoration: underline; }
   width: 36px;
   height: 36px;
   border-radius: 10px;
-  background: linear-gradient(135deg, var(--navy), var(--blue));
+  background: linear-gradient(135deg, var(--crimson-deep), var(--gold));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -391,6 +407,7 @@ a:hover { text-decoration: underline; }
   font-size: 12px;
   letter-spacing: 0.5px;
   flex-shrink: 0;
+  overflow: hidden;
 }
 .app-brand-text { min-width: 0; }
 .app-brand-title {
@@ -558,8 +575,8 @@ a:hover { text-decoration: underline; }
   font-weight: 700;
   letter-spacing: 0.6px;
 }
-.badge-hq { background: rgba(59,130,246,0.18); color: var(--blue-light); }
-.badge-brs { background: rgba(139,92,246,0.18); color: #c4b5fd; }
+.badge-hq { background: rgba(185,28,28,0.18); color: #FCA5A5; }
+.badge-brs { background: rgba(180,83,9,0.18); color: #FCD34D; }
 
 .grid-2 {
   display: grid;
@@ -794,40 +811,47 @@ a:hover { text-decoration: underline; }
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 9px 8px;
+  gap: 8px;
+  padding: 10px 8px;
   border: none;
   background: transparent;
   color: var(--text-2);
   font-family: inherit;
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 500;
   border-radius: 8px;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+  min-width: 0;
 }
 .tab-active {
   background: var(--bg-3);
   color: var(--text-0);
-  box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.3);
 }
 .tab:hover:not(.tab-active) { color: var(--text-1); }
 .tab-badge {
-  font-size: 9.5px;
-  padding: 2px 6px;
+  font-size: 10px;
+  padding: 3px 7px;
   border-radius: 999px;
   font-weight: 700;
   letter-spacing: 0.5px;
+  flex-shrink: 0;
 }
-.tab-badge-hq { background: rgba(59,130,246,0.22); color: var(--blue-light); }
-.tab-badge-brs { background: rgba(139,92,246,0.22); color: #c4b5fd; }
-.tab-badge-alert { background: rgba(245,158,11,0.22); color: #fbbf24; }
+.tab-badge-hq { background: rgba(185,28,28,0.22); color: #FCA5A5; }
+.tab-badge-brs { background: rgba(180,83,9,0.22); color: #FCD34D; }
+.tab-badge-alert { background: rgba(220,38,38,0.22); color: #FCA5A5; }
 .tab-label {
-  font-size: 12.5px;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-@media (max-width: 400px) {
-  .tab-label { display: none; }
-  .tab-badge { padding: 2px 10px; font-size: 11px; }
+@media (max-width: 420px) {
+  .tab { padding: 9px 6px; gap: 6px; }
+  .tab-label { font-size: 12px; }
+  .tab-badge { font-size: 9.5px; padding: 2px 6px; }
 }
 
 .tab-panel { animation: fadein 0.2s ease; }
@@ -888,7 +912,7 @@ a:hover { text-decoration: underline; }
 .ahu-status-toggle button[data-active="true"][data-status="off"] { background: var(--red-dim); color: #fca5a5; }
 
 /* UPS */
-.ups-list { display: flex; flex-direction: column; gap: 8px; }
+.ups-list { display: flex; flex-direction: column; gap: 10px; }
 .ups-block {
   background: var(--bg-2);
   border: 1px solid var(--border-0);
@@ -899,68 +923,109 @@ a:hover { text-decoration: underline; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 11px 14px;
+  padding: 12px 14px;
   cursor: pointer;
   user-select: none;
 }
 .ups-head-title {
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 600;
+  color: var(--text-0);
 }
 .ups-head-sub {
   font-size: 11px;
   color: var(--text-2);
-  margin-left: 8px;
+  margin-left: 10px;
+  padding: 2px 8px;
+  background: var(--border-0);
+  border-radius: 999px;
+  letter-spacing: 0.3px;
 }
 .ups-head-caret { font-size: 12px; color: var(--text-2); transition: transform 0.2s; }
 .ups-block[data-open="true"] .ups-head-caret { transform: rotate(180deg); }
 
 .ups-body {
-  padding: 0 14px 14px;
+  padding: 4px 14px 14px;
   display: none;
-  overflow-x: auto;
+  flex-direction: column;
+  gap: 12px;
 }
-.ups-block[data-open="true"] .ups-body { display: block; }
+.ups-block[data-open="true"] .ups-body { display: flex; }
 
-.ups-table {
-  width: 100%;
-  border-collapse: collapse;
+/* Each parameter row — label on top, inputs below. Works on all screen sizes. */
+.ups-row { display: flex; flex-direction: column; gap: 6px; }
+.ups-row-label {
   font-size: 12px;
-  min-width: 360px;
+  color: var(--text-1);
+  font-weight: 500;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
 }
-.ups-table th, .ups-table td {
-  padding: 6px 4px;
-  text-align: center;
-  font-weight: 400;
-}
-.ups-table th {
-  color: var(--text-2);
+.ups-row-label .unit {
   font-size: 10.5px;
-  letter-spacing: 0.3px;
-  text-transform: uppercase;
-  border-bottom: 1px solid var(--border-0);
-  padding-bottom: 8px;
-}
-.ups-table th.ups-param { text-align: left; padding-left: 4px; }
-.ups-table td.ups-param { text-align: left; color: var(--text-1); font-weight: 500; padding-left: 4px; }
-.ups-table input {
-  width: 100%;
-  padding: 6px 4px;
-  font-size: 12px;
-  text-align: center;
+  color: var(--text-3);
+  font-weight: 400;
   font-family: 'IBM Plex Mono', monospace;
+  letter-spacing: 0.3px;
+}
+
+/* 3-phase inputs in a row of 3 */
+.ups-row-phases {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+.ups-phase {
+  position: relative;
+  display: block;
+}
+.ups-phase-tag {
+  position: absolute;
+  top: 4px;
+  left: 7px;
+  font-size: 9px;
+  color: var(--text-3);
+  font-family: 'IBM Plex Mono', monospace;
+  letter-spacing: 0.5px;
+  pointer-events: none;
+  z-index: 1;
+}
+.ups-phase input {
+  width: 100%;
+  padding: 15px 4px 7px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  text-align: center;
   background: var(--bg-input);
   border: 1px solid var(--border-0);
   border-radius: 6px;
   color: var(--text-0);
+  transition: border-color 0.15s, background 0.15s;
 }
-.ups-table input:focus {
-  border-color: var(--blue);
+.ups-phase input:focus {
+  border-color: var(--crimson);
   outline: none;
+  background: rgba(185,28,28,0.06);
 }
-.ups-table .ups-cell-single { grid-column: span 3; }
+
+/* Single-value input */
 .ups-single-input {
-  max-width: 100%;
+  width: 100%;
+  padding: 10px 12px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 14px;
+  text-align: center;
+  background: var(--bg-input);
+  border: 1px solid var(--border-0);
+  border-radius: 6px;
+  color: var(--text-0);
+  transition: border-color 0.15s, background 0.15s;
+}
+.ups-single-input:focus {
+  border-color: var(--crimson);
+  outline: none;
+  background: rgba(185,28,28,0.06);
 }
 
 /* General Checks */
@@ -1271,8 +1336,21 @@ a:hover { text-decoration: underline; }
 @media (min-width: 640px) {
   .grid-2 { grid-template-columns: 1fr 1fr; }
   .upload-grid { grid-template-columns: 1fr 1fr; }
-  .ahu-grid { grid-template-columns: 1fr 1fr 1fr; }
+  .ahu-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .checks-grid { grid-template-columns: 1fr 1fr; }
+
+  /* On desktop the 3-column AHU grid is too tight for horizontal rows —
+     stack each AHU as a mini card with label, input, and toggle centered. */
+  .ahu-row {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+    gap: 8px;
+    padding: 14px 10px;
+    justify-items: center;
+    text-align: center;
+  }
+  .ahu-row-input { width: 100px; }
+  .ahu-row-label { font-weight: 600; }
 }
 
 @media (max-width: 420px) {

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1" />
-<meta name="theme-color" content="#0a0e1a" />
+<meta name="theme-color" content="#0F0A0A" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="DC Monitor" />
@@ -18,12 +18,12 @@
 <link rel="stylesheet" href="app.css" />
 <style>
 /* Critical inline CSS for initial paint */
-html,body{margin:0;padding:0;background:#0a0e1a;color:#e6e9f0;font-family:'IBM Plex Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
-.boot{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;background:#0a0e1a;z-index:9999;}
-.boot-logo{width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,#1e3a8a,#3b82f6);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:18px;letter-spacing:0.5px;}
-.boot-spin{width:22px;height:22px;border:2px solid rgba(255,255,255,0.15);border-top-color:#60a5fa;border-radius:50%;animation:bs 0.8s linear infinite;}
+html,body{margin:0;padding:0;background:#0F0A0A;color:#F5F0E8;font-family:'IBM Plex Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
+.boot{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;background:#0F0A0A;z-index:9999;}
+.boot-logo{width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,#7F1D1D,#D97706);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:18px;letter-spacing:0.5px;box-shadow:0 4px 16px rgba(127,29,29,0.4);}
+.boot-spin{width:22px;height:22px;border:2px solid rgba(255,245,235,0.15);border-top-color:#F59E0B;border-radius:50%;animation:bs 0.8s linear infinite;}
 @keyframes bs{to{transform:rotate(360deg);}}
-.boot-msg{font-size:13px;color:#8b94a8;letter-spacing:0.3px;}
+.boot-msg{font-size:13px;color:#8A817A;letter-spacing:0.3px;}
 </style>
 </head>
 <body>
@@ -243,11 +243,11 @@ html,body{margin:0;padding:0;background:#0a0e1a;color:#e6e9f0;font-family:'IBM P
     <div class="tabnav" role="tablist">
       <button class="tab tab-active" data-tab="hq" role="tab" aria-selected="true">
         <span class="tab-badge tab-badge-hq">HQ</span>
-        <span class="tab-label">HQ Readings</span>
+        <span class="tab-label">Headquarters</span>
       </button>
       <button class="tab" data-tab="brs" role="tab">
         <span class="tab-badge tab-badge-brs">BRS</span>
-        <span class="tab-label">BRS Readings</span>
+        <span class="tab-label">Backup Site</span>
       </button>
       <button class="tab" data-tab="alerts" role="tab">
         <span class="tab-badge tab-badge-alert">!</span>
