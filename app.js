@@ -1255,6 +1255,7 @@ async function runExtraction() {
 
     // Apply results
     let applied = 0;
+    const diagnostics = { hq: results.hq, brs: results.brs };
     if (results.hq) applied += applyExtraction('hq', results.hq);
     if (results.brs) applied += applyExtraction('brs', results.brs);
 
@@ -1266,7 +1267,7 @@ async function runExtraction() {
     } else if (applied === 0) {
       showExtractStatus('No readable values found — please fill manually', 'warn');
     } else {
-      showExtractStatus(`✓ Extracted ${applied} values. Blue fields are from AI — verify before sending.`, 'success');
+      showExtractStatus(`✓ Extracted ${applied} values. Blue fields are from AI — verify before sending.`, 'success', null, diagnostics);
     }
   } catch (e) {
     showExtractStatus('Extraction error — fill values manually', 'error', e);
@@ -1274,35 +1275,64 @@ async function runExtraction() {
 }
 
 async function callGemini(photos, siteTag) {
-  const systemPrompt = `You are reading data center monitoring panel images for the ${siteTag.toUpperCase()} site.
-Extract these readings if visible and return ONLY a JSON object matching this schema:
+  const upsA = siteTag === 'hq' ? 'UPS A' : 'UPS 1';
+  const upsB = siteTag === 'hq' ? 'UPS B' : 'UPS 2';
+
+  const systemPrompt = `You are reading data center monitoring panel images for the ${siteTag.toUpperCase()} data center.
+
+These photos may show:
+- AHU (Air Handling Unit) temperature displays — there are 3 AHUs, labelled 1, 2, and 3
+- UPS (Uninterruptible Power Supply) displays — there are 2 UPSs: "${upsA}" and "${upsB}"
+- Multiple photos may show the same UPS on different screens/pages — MERGE all readings for each UPS into one object.
+
+Be THOROUGH, not conservative. Extract every reading that appears anywhere across the photos. If a digit is even partially visible, include it. Only omit a field if it is truly not shown on any photo.
+
+Return ONLY a JSON object matching this schema. Include ALL 3 AHUs that appear, and BOTH UPSs that appear:
 
 {
-  "ahu": [ { "index": 1, "temp": 22.5, "status": "ok" } ],  // status: "ok" | "alert" | "off"
+  "ahu": [
+    { "index": 1, "temp": 22.5, "status": "ok" },
+    { "index": 2, "temp": 21.0, "status": "ok" },
+    { "index": 3, "temp": 23.5, "status": "ok" }
+  ],
   "ups": {
-    "${siteTag === 'hq' ? 'UPS A' : 'UPS 1'}": {
-      "input": { "L1": 240, "L2": 238, "L3": 241 },
+    "${upsA}": {
+      "input":  { "L1": 240, "L2": 238, "L3": 241 },
       "output": { "L1": 240, "L2": 240, "L3": 240 },
-      "current": { "L1": 10.2, "L2": 9.8, "L3": 10.1 },
-      "load": { "L1": 40, "L2": 38, "L3": 39 },
-      "power": { "L1": 4.1, "L2": 3.9, "L3": 4.0 },
+      "current":{ "L1": 10.2, "L2": 9.8, "L3": 10.1 },
+      "load":   { "L1": 40,  "L2": 38,  "L3": 39 },
+      "power":  { "L1": 4.1, "L2": 3.9, "L3": 4.0 },
       "batVoltage": 408,
       "batCurrent": 0.5,
       "batCapacity": 100,
       "runtime": 45,
       "frequency": 50.0,
       "upsTemp": 28
+    },
+    "${upsB}": {
+      "input":  { "L1": 239, "L2": 240, "L3": 241 },
+      "output": { "L1": 240, "L2": 240, "L3": 240 },
+      "current":{ "L1": 8.5, "L2": 8.2, "L3": 8.6 },
+      "load":   { "L1": 34,  "L2": 33,  "L3": 34 },
+      "power":  { "L1": 3.4, "L2": 3.3, "L3": 3.4 },
+      "batVoltage": 410,
+      "batCurrent": 0.3,
+      "batCapacity": 99,
+      "runtime": 48,
+      "frequency": 50.0,
+      "upsTemp": 27
     }
   }
 }
 
-Rules:
-- Only include fields you can clearly read from the images.
-- Omit any field you cannot read — do NOT guess.
-- Voltages are typically 200-250V, frequency 49-51Hz, AHU temp 18-24°C normal.
-- For AHU: index is the AHU number (1, 2, 3). status is "ok" if temp is in range and unit is running; "alert" if temp is elevated; "off" if the unit display shows off/zero.
-- UPS names for HQ are "UPS A" and "UPS B". For BRS they are "UPS 1" and "UPS 2".
-- Return ONLY the JSON object — no markdown, no commentary, no backticks.`;
+Extraction rules:
+- Include EVERY field you can read anywhere across the photos. If a reading appears on any page of any photo, include it.
+- For 3-phase readings (input, output, current, load, power), fill L1, L2, L3 independently from left to right as shown.
+- For single-value readings (batVoltage, batCurrent, batCapacity, runtime, frequency, upsTemp), provide one number.
+- AHU status: "ok" if running and temp is 18–24°C, "alert" if temp is elevated or unit shows a fault, "off" if display is blank or shows zero.
+- Normal ranges: voltages 200–250 V, frequency 49–51 Hz, AHU temp 18–24 °C, battery voltage 380–550 V.
+- If the same UPS appears in multiple photos showing different screens, consolidate — do not return it twice.
+- Return ONLY the JSON object — no markdown, no commentary, no backticks, no explanation.`;
 
   const parts = [{ text: systemPrompt }];
   photos.forEach(p => {
@@ -1403,7 +1433,7 @@ function applyExtraction(site, extracted) {
   return count;
 }
 
-function showExtractStatus(msg, level, err) {
+function showExtractStatus(msg, level, err, diagnostics) {
   const el = $('#extractStatus');
   el.hidden = false;
   el.dataset.level = level;
@@ -1413,6 +1443,25 @@ function showExtractStatus(msg, level, err) {
     btn.className = 'btn btn-ghost btn-sm';
     btn.textContent = 'Show details';
     btn.onclick = () => showErrorSheet('Extraction error', err);
+    el.appendChild(btn);
+  } else if (diagnostics) {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-ghost btn-sm';
+    btn.textContent = 'What AI saw';
+    btn.onclick = () => {
+      const fake = {
+        message: 'Extraction result from Gemini',
+        details: JSON.stringify(diagnostics, null, 2),
+      };
+      $('#errSheetTitle').textContent = 'AI extraction diagnostics';
+      $('#errSummary').textContent = 'This is the raw JSON Gemini returned for each site. Missing fields mean Gemini didn\'t see them in the photos.';
+      $('#errPre').textContent = fake.details;
+      $('#errCopy').onclick = async () => {
+        try { await navigator.clipboard.writeText(fake.details); toast('Copied', 'success'); }
+        catch { toast('Copy failed', 'error'); }
+      };
+      openSheet('#errSheet');
+    };
     el.appendChild(btn);
   }
 }
