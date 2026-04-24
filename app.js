@@ -26,12 +26,14 @@ const LS_KEYS = {
   apiKey: 'dcm.geminiKey',
   author: 'dcm.author',
   mailTo: 'dcm.mailTo',
+  salutation: 'dcm.salutation',
+  signoff: 'dcm.signoff',
   draft: 'dcm.draft',
   queue: 'dcm.queue',
   history: 'dcm.history',
 };
 
-const HQ_CHECKS = ['Access Control', 'Lighting', 'Security Cameras', 'Fire Suppression', 'Clutter & Cleanliness'];
+const HQ_CHECKS = ['Access Control', 'Lighting', 'Security Cameras', 'Fire Suppression', 'UPS Room Temp', 'Clutter & Cleanliness'];
 const BRS_CHECKS = ['Access Control', 'Lighting', 'Security Cameras', 'Fire Suppression', 'UPS Room Temp', 'Clutter & Cleanliness'];
 const UPS_PARAMS = [
   { key: 'input', label: 'Input (V)', threePhase: true, type: 'voltage' },
@@ -147,6 +149,18 @@ function fmtDate(iso) {
   const [y, m, d] = iso.split('-');
   const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   return `${parseInt(d,10)} ${months[parseInt(m,10)-1]} ${y}`;
+}
+
+function fmtDateOrdinal(iso) {
+  if (!iso) return '';
+  const [y, m, d] = iso.split('-');
+  const day = parseInt(d, 10);
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const suffix = (n) => {
+    if (n >= 11 && n <= 13) return 'th';
+    switch (n % 10) { case 1: return 'st'; case 2: return 'nd'; case 3: return 'rd'; default: return 'th'; }
+  };
+  return `${day}${suffix(day)} ${months[parseInt(m,10)-1]} ${y}`;
 }
 
 function escapeHtml(s) {
@@ -378,6 +392,8 @@ async function enterApp() {
   $('#reportDate').value = S.date;
   S.author = localStorage.getItem(LS_KEYS.author) || '';
   S.mailTo = localStorage.getItem(LS_KEYS.mailTo) || 'alfred@bou.or.ug';
+  S.salutation = localStorage.getItem(LS_KEYS.salutation) || 'Dear Team,';
+  S.signoff = localStorage.getItem(LS_KEYS.signoff) || 'Kind regards,';
   $('#reportAuthor').value = S.author;
 
   // Update header pin chip
@@ -1154,6 +1170,14 @@ function wireFieldListeners() {
   });
   // Step 3 fields
   $('#mailTo').addEventListener('input', e => { S.mailTo = e.target.value; localStorage.setItem(LS_KEYS.mailTo, S.mailTo); });
+  $('#mailSalutation').addEventListener('input', e => {
+    S.salutation = e.target.value;
+    localStorage.setItem(LS_KEYS.salutation, S.salutation);
+  });
+  $('#mailSignoff').addEventListener('input', e => {
+    S.signoff = e.target.value;
+    localStorage.setItem(LS_KEYS.signoff, S.signoff);
+  });
 }
 
 // ============================================================
@@ -1532,14 +1556,16 @@ function generateReportHtml() {
   const date = S.date || todayStr();
   const dateStr = fmtDate(date);
   const author = (S.author || 'TI&O Engineer').trim();
+  const salutation = (S.salutation || 'Dear Team,').trim();
+  const signoff = (S.signoff || 'Kind regards,').trim();
   const r = S.readings;
 
   const hqAlert = hasAlert('hq');
   const brsAlert = hasAlert('brs');
   const mainAlert = r.alert.title.trim() || r.alert.desc.trim();
 
-  // Build subject line for email (not in HTML but returned for mailto)
-  const subject = `DC Monitoring Report — ${dateStr}`;
+  // Subject line matches the existing report naming convention
+  const subject = `DATA CENTER MONITORING REPORT — ${fmtDateOrdinal(date)}`;
 
   const body = `<!DOCTYPE html>
 <html lang="en">
@@ -1551,6 +1577,12 @@ function generateReportHtml() {
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#f4f6fa;">
   <tr><td align="center">
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="680" style="width:100%;max-width:680px;margin:0 auto;background:#ffffff;">
+
+      <!-- Salutation -->
+      <tr><td style="padding:20px 28px 0;font-size:14px;color:#334155;">
+        ${escapeHtml(salutation)}<br><br>
+        Kindly refer to the data center monitoring report below.
+      </td></tr>
 
       <!-- Banner -->
       <tr><td style="background:#7F1D1D;padding:20px 28px;color:#ffffff;">
@@ -1627,6 +1659,7 @@ function generateReportHtml() {
             ${upsCard('BRS', 'UPS 2', r.brs.ups['UPS 2'])}
           </tr>
         </table>
+        ${upsSummaryLine(r)}
       </td></tr>
 
       <!-- General Checks -->
@@ -1664,8 +1697,14 @@ function generateReportHtml() {
       </td></tr>
       ` : ''}
 
+      <!-- Signoff -->
+      <tr><td style="padding:20px 28px 8px;font-size:14px;color:#334155;">
+        ${escapeHtml(signoff)}<br>
+        <strong>${escapeHtml(author)}</strong>
+      </td></tr>
+
       <!-- Footer -->
-      <tr><td style="padding:24px 28px 28px;">
+      <tr><td style="padding:8px 28px 28px;">
         <div style="border-top:1px solid #e5e7eb;padding-top:16px;text-align:center;font-size:11px;color:#94a3b8;letter-spacing:0.3px;">
           Prepared by ${escapeHtml(author)} &middot; TI&amp;O Department &middot; Bank of Uganda &middot; Confidential
         </div>
@@ -1704,6 +1743,7 @@ function siteOverviewCard(site, alert) {
 
 function ahuSection(site, ahus) {
   const color = site === 'HQ' ? '#B91C1C' : '#B45309';
+  const obs = ahuObservation(ahus);
   const rows = ahus.map((a, i) => {
     const temp = parseFloat(a.temp);
     const isValid = !isNaN(temp);
@@ -1751,6 +1791,7 @@ function ahuSection(site, ahus) {
       <tr><td style="padding:12px 16px 6px;">
         <div style="font-size:11px;letter-spacing:0.4px;text-transform:uppercase;font-weight:600;color:#64748b;margin-bottom:4px;">${site} Server Room</div>
         ${rows}
+        ${obs ? `<div style="font-size:11px;color:#64748b;padding:8px 0 2px;font-style:italic;">${escapeHtml(obs)}</div>` : ''}
       </td></tr>
     </table>
   `;
@@ -1759,6 +1800,7 @@ function ahuSection(site, ahus) {
 function upsCard(site, name, ups) {
   const hasData = hasUpsData(ups);
   const color = site === 'HQ' ? '#B91C1C' : '#B45309';
+  const obs = hasData ? upsObservation(ups) : '';
 
   if (!hasData) {
     return `<td width="25%" style="padding:0 3px;vertical-align:top;">
@@ -1832,6 +1874,21 @@ function hasUpsData(ups) {
   });
 }
 
+function upsSummaryLine(r) {
+  const bits = [];
+  const push = (site, name, ups) => {
+    if (!hasUpsData(ups)) return;
+    const obs = upsObservation(ups);
+    if (obs) bits.push(`<strong>${site} ${name}:</strong> ${escapeHtml(obs)}`);
+  };
+  push('HQ', 'A', r.hq.ups['UPS A']);
+  push('HQ', 'B', r.hq.ups['UPS B']);
+  push('BRS', '1', r.brs.ups['UPS 1']);
+  push('BRS', '2', r.brs.ups['UPS 2']);
+  if (bits.length === 0) return '';
+  return `<div style="font-size:11px;color:#64748b;line-height:1.6;padding:10px 2px 2px;">${bits.join(' &nbsp;·&nbsp; ')}</div>`;
+}
+
 function hasAlert(site) {
   const r = S.readings[site];
   const ahuAlert = r.ahu.some(a => a.status === 'alert' || a.status === 'off');
@@ -1847,16 +1904,51 @@ function avgOfPhases(v) {
 }
 
 // ============================================================
+// AUTO-GENERATED OBSERVATIONS
+// Return short, management-friendly text derived from the readings.
+// ============================================================
+function ahuObservation(ahus) {
+  const temps = ahus.map(a => parseFloat(a.temp)).filter(n => !isNaN(n));
+  const offCount = ahus.filter(a => a.status === 'off').length;
+  const alertCount = ahus.filter(a => a.status === 'alert').length;
+  if (temps.length === 0) return '';
+  const avg = temps.reduce((a,b) => a+b, 0) / temps.length;
+  const parts = [`Average ${avg.toFixed(1)} °C across ${temps.length} unit${temps.length > 1 ? 's' : ''}`];
+  if (offCount > 0) parts.push(`${offCount} unit${offCount > 1 ? 's' : ''} off`);
+  if (alertCount > 0) parts.push(`${alertCount} unit${alertCount > 1 ? 's' : ''} flagged`);
+  return parts.join(' · ');
+}
+
+function upsObservation(ups) {
+  if (!hasUpsData(ups)) return '';
+  const parts = [];
+  const loadAvg = avgOfPhases(ups.load);
+  if (loadAvg != null) parts.push(`Load ${loadAvg.toFixed(0)}% avg`);
+  const bat = parseFloat(ups.batCapacity?.value);
+  const rt = parseFloat(ups.runtime?.value);
+  if (!isNaN(bat)) {
+    parts.push(isNaN(rt) ? `Battery ${bat.toFixed(0)}%` : `Battery ${bat.toFixed(0)}% (${rt.toFixed(0)} min runtime)`);
+  } else if (!isNaN(rt)) {
+    parts.push(`Runtime ${rt.toFixed(0)} min`);
+  }
+  const freq = parseFloat(ups.frequency?.value);
+  if (!isNaN(freq)) parts.push(`${freq.toFixed(1)} Hz`);
+  return parts.join(' · ');
+}
+
+// ============================================================
 // STEP 3 — Preview & Send
 // ============================================================
 function refreshPreview() {
-  const { html } = generateReportHtml();
+  const { html, subject } = generateReportHtml();
   const frame = $('#previewFrame');
   frame.srcdoc = html;
 
-  // Prefill mailTo/subject
+  // Prefill mailTo/subject/salutation/signoff
   if (!$('#mailTo').value) $('#mailTo').value = S.mailTo;
-  $('#mailSubject').value = `DC Monitoring Report — ${fmtDate(S.date)}`;
+  $('#mailSubject').value = subject;
+  $('#mailSalutation').value = S.salutation;
+  $('#mailSignoff').value = S.signoff;
 }
 
 function wireSendActions() {
